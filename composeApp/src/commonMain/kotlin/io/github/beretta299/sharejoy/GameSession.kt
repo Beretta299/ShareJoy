@@ -161,6 +161,17 @@ class GameSession {
     /** Metres across the screen: one half in portrait, the whole field (and at least a tower's height) when wide. */
     private fun homeView() = if (wide) max(2f * Balance.HALF_WORLD, MIN_VIEW_HEIGHT * aspect) else Balance.HALF_WORLD
 
+    /**
+     * The fixed view of one paired phone: exactly [player]'s half, edge to edge, with the seam on the inner edge.
+     * Both phones use the same scale and ground line, so a shot leaving one screen enters the other at the same
+     * height and the same instant.
+     */
+    fun fixedCamera(player: Int, screenAspect: Float, out: Camera) {
+        out.viewW = Balance.HALF_WORLD
+        out.cx = game.side(player) * Balance.HALF_WORLD / 2f
+        out.cy = out.viewW / screenAspect * GROUND_LINE
+    }
+
     private fun snapCamera() {
         camera.cx = homeX(game.current)
         camera.viewW = homeView()

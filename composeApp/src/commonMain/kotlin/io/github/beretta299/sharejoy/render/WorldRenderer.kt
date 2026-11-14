@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import io.github.beretta299.sharejoy.Camera
 import io.github.beretta299.sharejoy.GameSession
 import io.github.beretta299.sharejoy.game.Ammo
 import io.github.beretta299.sharejoy.game.Balance
@@ -35,7 +36,17 @@ val PLAYER_DARK = listOf(Color(0xFF7A1D18), Color(0xFF1B3F7A))
 private const val TPM = Textures.TPM
 
 /** Maps world metres (y up) to screen pixels (y down). */
-private class View(val scale: Float, val cx: Float, val cy: Float, val w: Float, val h: Float, val ox: Float, val oy: Float) {
+private class View(
+    val scale: Float, val cx: Float, val cy: Float, val w: Float, val h: Float, val ox: Float, val oy: Float,
+    seamless: Boolean,
+) {
+    /**
+     * Distant scenery slides slower than the camera. It is measured from this world x, drawn at this pixel.
+     * Normally that is the centre of the screen. When two phones show one picture it is the seam between them,
+     * so hills and clouds continue from one screen onto the other without a jump.
+     */
+    val ref = if (seamless) 0f else cx
+    val ax = if (seamless) (0f - cx) * scale + w / 2f else w / 2f
     fun x(wx: Float) = (wx - cx) * scale + w / 2f + ox
     fun y(wy: Float) = h / 2f - (wy - cy) * scale + oy
     val left get() = cx - w / 2f / scale
@@ -48,13 +59,12 @@ private fun hash(i: Int): Float {
 }
 
 /** Draws one frame of the match: scenery, castles, shots and effects. */
-fun DrawScope.drawWorld(session: GameSession, tex: Textures) {
-    val cam = session.camera
+fun DrawScope.drawWorld(session: GameSession, tex: Textures, cam: Camera = session.camera, seamless: Boolean = false) {
     val scale = size.width / cam.viewW
     val shakePx = session.shake * 0.22f * scale
     val view = View(
         scale, cam.cx, cam.cy, size.width, size.height,
-        sin(session.time * 71f) * shakePx, cos(session.time * 57f) * shakePx,
+        sin(session.time * 71f) * shakePx, cos(session.time * 57f) * shakePx, seamless,
     )
     val game = session.game
 
@@ -78,9 +88,10 @@ fun DrawScope.drawWorld(session: GameSession, tex: Textures) {
     drawParticles(view, session.particles)
     if (session.aiming) drawTrajectory(view, session)
 
-    // Warm light from the sun side and a gentle vignette pull the scene together.
-    drawRect(Brush.linearGradient(listOf(Color(0x18FFD9A0), Color.Transparent), Offset(size.width, 0f), Offset(size.width * 0.3f, size.height)))
-    drawRect(
+    // Warm light from the sun side and a gentle vignette pull the scene together. Not when two screens share
+    // one picture: a vignette per screen would darken the seam.
+    if (!seamless) drawRect(Brush.linearGradient(listOf(Color(0x18FFD9A0), Color.Transparent), Offset(size.width, 0f), Offset(size.width * 0.3f, size.height)))
+    if (!seamless) drawRect(
         Brush.radialGradient(
             0.55f to Color.Transparent, 1f to Color(0x59000000),
             center = Offset(size.width / 2f, size.height / 2f), radius = max(size.width, size.height) * 0.72f,
@@ -102,7 +113,7 @@ private fun DrawScope.drawSky(view: View, time: Float) {
         ),
     )
     // Sun with a wide glow.
-    val sun = Offset(size.width * 0.74f - view.cx * view.scale * 0.03f, horizon - size.height * 0.46f)
+    val sun = Offset(view.ax + size.width * 0.24f - view.ref * view.scale * 0.03f, horizon - size.height * 0.46f)
     val unit = min(size.width, size.height)
     drawCircle(Brush.radialGradient(listOf(Color(0x66FFF3C4), Color.Transparent), center = sun, radius = unit * 0.6f), unit * 0.6f, sun)
     drawCircle(Color(0xFFFFF6D8), unit * 0.06f, sun)
@@ -110,7 +121,7 @@ private fun DrawScope.drawSky(view: View, time: Float) {
     // Clouds drift slowly; far layers move less than the camera.
     for (i in 0 until 9) {
         val wx = -130f + i * 31f + hash(i) * 14f + time * 0.35f
-        val px = size.width / 2f + (wx - view.cx) * view.scale * 0.16f
+        val px = view.ax + (wx - view.ref) * view.scale * 0.16f
         val py = horizon - size.height * (0.3f + hash(i + 40) * 0.36f)
         val s = view.scale * (0.7f + hash(i + 80) * 0.7f)
         for (k in 0 until 5) {
@@ -128,7 +139,7 @@ private fun DrawScope.drawSky(view: View, time: Float) {
     // A tree line on the nearest hills.
     for (i in -60..60) {
         val wx = i * 2.3f + hash(i + 900) * 1.4f
-        val px = size.width / 2f + (wx - view.cx) * view.scale * 0.6f
+        val px = view.ax + (wx - view.ref) * view.scale * 0.6f
         if (px < -80f || px > size.width + 80f) continue
         val r = view.scale * (0.55f + hash(i + 300) * 0.5f)
         val py = horizon - r * 0.5f
@@ -150,7 +161,7 @@ private fun DrawScope.drawRidge(
     var i = -70
     var peak = horizon
     while (i <= 70) {
-        val px = size.width / 2f + (i * step - view.cx) * s
+        val px = view.ax + (i * step - view.ref) * s
         if (px > -step * s * 2f && px < size.width + step * s * 2f) {
             val hgt = base + amp * (0.35f * hash(i + seed) + 0.65f * (0.5f + 0.5f * sin(i * 0.9f + seed)))
             val py = horizon - hgt * view.scale * (0.5f + parallax)
@@ -668,8 +679,7 @@ private fun DrawScope.drawTrajectory(view: View, session: GameSession) {
 }
 
 /** Converts a screen position back to world metres; used for touch input. */
-fun screenToWorld(session: GameSession, width: Float, height: Float, sx: Float, sy: Float): Offset {
-    val cam = session.camera
+fun screenToWorld(cam: Camera, width: Float, height: Float, sx: Float, sy: Float): Offset {
     val scale = width / cam.viewW
     return Offset((sx - width / 2f) / scale + cam.cx, cam.cy - (sy - height / 2f) / scale)
 }

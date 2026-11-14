@@ -52,14 +52,16 @@ private val Muted = Color(0xFFB9A888)
 private val PanelShape = RoundedCornerShape(10.dp)
 private val NAMES = listOf("Red", "Blue")
 
+/** [viewer] is the player this phone belongs to when two phones are paired, or null when both share one screen. */
 @Composable
-fun Hud(session: GameSession) {
+fun Hud(session: GameSession, viewer: Int? = null) {
     val hud = session.hud
+    val mine = viewer == null || viewer == hud.current
     Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
-        TopBar(hud, session)
+        TopBar(hud, session, mine)
 
         AnimatedVisibility(
-            visible = hud.phase == Phase.PLAN && !hud.aiming,
+            visible = mine && hud.phase == Phase.PLAN && !hud.aiming,
             modifier = Modifier.align(Alignment.BottomCenter),
             enter = fadeIn(), exit = fadeOut(),
         ) {
@@ -67,9 +69,9 @@ fun Hud(session: GameSession) {
         }
 
         AnimatedVisibility(hud.phase == Phase.HANDOVER, Modifier.align(Alignment.Center), enter = fadeIn(), exit = fadeOut()) {
-            Banner("${NAMES[hud.current]}'s turn", PLAYER_COLORS[hud.current])
+            Banner(if (viewer == hud.current) "Your turn" else "${NAMES[hud.current]}'s turn", PLAYER_COLORS[hud.current])
         }
-        AnimatedVisibility(hud.canSplit, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp), enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(hud.canSplit && mine, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp), enter = fadeIn(), exit = fadeOut()) {
             Banner("Tap to split!", Gold, small = true)
         }
         if (hud.phase == Phase.ROUND_OVER || hud.phase == Phase.MATCH_OVER) {
@@ -102,7 +104,7 @@ private fun AmmoPicker(hud: HudState, session: GameSession) {
 
 /** Built for a narrow portrait phone: badges on one line, then the hint and the ammo picker stacked below. */
 @Composable
-private fun BoxScope.TopBar(hud: HudState, session: GameSession) {
+private fun BoxScope.TopBar(hud: HudState, session: GameSession, mine: Boolean) {
     val onRestart = session::restart
     Column(
         Modifier.fillMaxWidth().align(Alignment.TopCenter),
@@ -130,14 +132,18 @@ private fun BoxScope.TopBar(hud: HudState, session: GameSession) {
             )
         }
         val hint = when (hud.phase) {
-            Phase.PLAN -> if (hud.aiming) "Release to fire" else "${NAMES[hud.current]}: build, then pull the slingshot back"
-            Phase.BUILDING -> "Building…"
+            Phase.PLAN, Phase.BUILDING -> when {
+                !mine -> "${NAMES[hud.current]} is taking aim…"
+                hud.phase == Phase.BUILDING -> "Building…"
+                hud.aiming -> "Release to fire"
+                else -> "${NAMES[hud.current]}: build, then pull the slingshot back"
+            }
             else -> ""
         }
         if (hint.isNotEmpty()) {
             Label(hint, 12, Parchment, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x99000000)).padding(horizontal = 10.dp, vertical = 3.dp))
         }
-        if (hud.phase == Phase.PLAN && !hud.aiming && hud.ammo.size > 1) AmmoPicker(hud, session)
+        if (mine && hud.phase == Phase.PLAN && !hud.aiming && hud.ammo.size > 1) AmmoPicker(hud, session)
     }
 }
 
