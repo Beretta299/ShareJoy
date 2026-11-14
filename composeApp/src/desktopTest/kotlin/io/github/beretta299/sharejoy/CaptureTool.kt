@@ -79,7 +79,7 @@ class CaptureTool {
             shot("01_red_plan")
             session.buy(Track.AMMO)
             frames(40)
-            aimAndFire(-1.6f, -1.4f, "02_red_aim")
+            aimAndFire(-1.6f, -1.1f, "02_red_aim")
             frames(52); session.tap(); frames(8)
             shot("03_split_shot")
             frames(40); shot("04_impact")
@@ -91,15 +91,15 @@ class CaptureTool {
             waitForPlan(); frames(30)
             session.buy(Track.MATERIALS)
             frames(40)
-            aimAndFire(1.7f, -1.5f, "07_blue_aim")
+            aimAndFire(1.8f, -1.7f, "07_blue_aim")
             frames(100); shot("08_blue_impact")
             waitForPlan(); frames(60)
 
             val script = listOf(
-                Triple(-1.6f, -1.5f, Ammo.KEG), Triple(1.5f, -1.5f, Ammo.STONE),
-                Triple(-1.9f, -1.2f, Ammo.IRON), Triple(1.8f, -1.3f, Ammo.STONE),
-                Triple(-1.5f, -1.7f, Ammo.KEG), Triple(1.6f, -1.6f, Ammo.STONE),
-                Triple(-1.7f, -1.5f, Ammo.IRON), Triple(1.9f, -1.2f, Ammo.STONE),
+                Triple(-1.7f, -1.3f, Ammo.KEG), Triple(2.0f, -1.4f, Ammo.STONE),
+                Triple(-1.5f, -1.0f, Ammo.IRON), Triple(1.6f, -1.1f, Ammo.STONE),
+                Triple(-1.5f, -1.4f, Ammo.KEG), Triple(1.8f, -1.1f, Ammo.STONE),
+                Triple(-1.6f, -1.2f, Ammo.IRON), Triple(2.0f, -1.7f, Ammo.STONE),
             )
             var i = 0
             while (!over() && i < script.size) {

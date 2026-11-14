@@ -80,9 +80,6 @@ class GameSession {
     private var sized = false
     private var aspect = 0.46f
 
-    /** True when the screen is wide enough to show both halves at once. */
-    val wide: Boolean get() = aspect > WIDE_ASPECT
-
     init {
         snapCamera()
         refreshHud()
@@ -91,9 +88,8 @@ class GameSession {
     // ------------------------------------------------------------------ loop
 
     fun advance(realDt: Float, screenAspect: Float) {
-        val wasWide = wide
         aspect = screenAspect
-        if (!sized || wasWide != wide) {
+        if (!sized) {
             sized = true
             snapCamera()
         }
@@ -119,6 +115,7 @@ class GameSession {
         particles.update(dt * scale)
         shake = max(0f, shake - dt * 2.2f)
         updateCamera(dt)
+        updatePairCameras(dt)
         refreshHud()
     }
 
@@ -156,21 +153,46 @@ class GameSession {
 
     private fun viewH(viewW: Float) = viewW / aspect
 
-    private fun homeX(player: Int) = if (wide) 0f else game.side(player) * Balance.HALF_WORLD / 2f
+    private fun homeX(player: Int) = game.side(player) * (Balance.GAP + Balance.SCREEN_WIDTH) / 2f
 
-    /** Metres across the screen: one half in portrait, the whole field (and at least a tower's height) when wide. */
-    private fun homeView() = if (wide) max(2f * Balance.HALF_WORLD, MIN_VIEW_HEIGHT * aspect) else Balance.HALF_WORLD
+    private fun homeView() = Balance.SCREEN_WIDTH
 
     /**
-     * The fixed view of one paired phone: exactly [player]'s half, edge to edge, with the seam on the inner edge.
-     * Both phones use the same scale and ground line, so a shot leaving one screen enters the other at the same
-     * height and the same instant.
+     * Cameras of two paired phones, left and right. At rest each shows its owner's home. While a shot is in the
+     * air the two screens lock together into one continuous window that travels with the shot across the open
+     * ground, so it leaves one screen and enters the other at the same height and the same instant. After the
+     * hit each camera glides back home.
      */
-    fun fixedCamera(player: Int, screenAspect: Float, out: Camera) {
-        out.viewW = Balance.HALF_WORLD
-        out.cx = game.side(player) * Balance.HALF_WORLD / 2f
-        out.cy = out.viewW / screenAspect * GROUND_LINE
+    val pairCameras = listOf(Camera(), Camera())
+
+    private fun updatePairCameras(dt: Float) {
+        val half = Balance.SCREEN_WIDTH / 2f
+        val rest = viewH(Balance.SCREEN_WIDTH) * GROUND_LINE
+        var ty = rest
+        val flying = if (game.phase == Phase.RESOLVING) {
+            game.pieces.firstOrNull { it.kind == PieceKind.PROJECTILE && !it.hasHit }?.body
+        } else null
+        for (i in 0..1) {
+            val cam = pairCameras[i]
+            var tx = homeX(i)
+            if (flying != null) {
+                // Centre of the joined window: it starts on the shooter's home and ends on the target's.
+                val c = (flying.x + flying.vx * 0.3f).coerceIn(-Balance.GAP / 2f, Balance.GAP / 2f)
+                tx = c + game.side(i) * half
+                ty = max(rest, flying.y - viewH(Balance.SCREEN_WIDTH) * 0.22f)
+            }
+            if (!pairSized) {
+                cam.cx = tx
+                cam.cy = ty
+            }
+            cam.viewW = Balance.SCREEN_WIDTH
+            val k = 1f - exp(-dt * 5f)
+            cam.cx += (tx - cam.cx) * k
+            cam.cy += (ty - cam.cy) * k
+        }
+        pairSized = true
     }
+    private var pairSized = false
 
     private fun snapCamera() {
         camera.cx = homeX(game.current)
@@ -261,7 +283,7 @@ class GameSession {
     }
 
     fun pan(worldDx: Float) {
-        if (game.phase == Phase.PLAN && !aiming) panOffset = (panOffset - worldDx).coerceIn(-Balance.HALF_WORLD, Balance.HALF_WORLD)
+        if (game.phase == Phase.PLAN && !aiming) panOffset = (panOffset - worldDx).coerceIn(-2f * Balance.HALF_WORLD, 2f * Balance.HALF_WORLD)
     }
 
     fun tap() {
@@ -335,7 +357,6 @@ class GameSession {
     companion object {
         const val STEP = 1f / 60f
         const val WIDE_ASPECT = 0.8f
-        const val MIN_VIEW_HEIGHT = 17f
 
         /** The ground sits this far up the screen, as a fraction of the view height below centre. */
         const val GROUND_LINE = 0.25f

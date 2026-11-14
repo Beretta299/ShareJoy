@@ -15,9 +15,9 @@ enum class PieceKind { BLOCK, KEEPER, PROJECTILE }
 enum class Role { GROUND_PILLAR, UPPER_PILLAR, FLOOR_BEAM, ROOF_BEAM, MERLON, FRONT_WALL, COVER, BUTTRESS, NONE }
 
 enum class Ammo(val title: String, val radius: Float, val density: Float, val punch: Float) {
-    STONE("Stone", 0.36f, 5.5f, 2.7f),
-    SPLIT("Split shot", 0.36f, 5.5f, 2.7f),
-    IRON("Iron ball", 0.42f, 8f, 3.5f),
+    STONE("Stone", 0.36f, 5.5f, 2.0f),
+    SPLIT("Split shot", 0.36f, 5.5f, 2.0f),
+    IRON("Iron ball", 0.42f, 8f, 2.6f),
     KEG("Powder keg", 0.42f, 2.2f, 1f),
 }
 
@@ -116,13 +116,18 @@ sealed interface GameEvent {
 /** All tunable numbers in one place. */
 object Balance {
     /** Half the width of the battlefield. Each phone shows one half; the seam between them is x = 0. */
-    const val HALF_WORLD = 13f
+    /** Metres of battlefield one phone screen shows across its width. */
+    const val SCREEN_WIDTH = 13f
+
+    /** Open ground between the two home screens. Neither phone shows it at rest; the cameras cross it with the shot. */
+    const val GAP = 12f
+    const val HALF_WORLD = SCREEN_WIDTH + GAP / 2f
     const val GORGE_HALF_WIDTH = 1.2f
-    const val CASTLE_BACK_X = 12.5f
-    const val SLINGSHOT_X = 3.4f
+    const val CASTLE_BACK_X = 12.5f + GAP / 2f
+    const val SLINGSHOT_X = 3.4f + GAP / 2f
     const val SLINGSHOT_Y = 2.3f
     const val MAX_PULL = 2.2f
-    const val BASE_SPEED = 15f
+    const val BASE_SPEED = 21f
     const val POWER_STEP = 0.11f
 
     const val TURN_INCOME = 3

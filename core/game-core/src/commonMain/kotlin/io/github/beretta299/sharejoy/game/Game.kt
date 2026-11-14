@@ -79,8 +79,8 @@ class Game {
         players.forEach { it.resetForRound() }
 
         for (s in intArrayOf(-1, 1)) {
-            val ground = Body(world.newId(), halfW = 15f, halfH = 6f, density = 0f, friction = 0.9f)
-            ground.x = s * (Balance.GORGE_HALF_WIDTH + 15f)
+            val ground = Body(world.newId(), halfW = 20f, halfH = 6f, density = 0f, friction = 0.9f)
+            ground.x = s * (Balance.GORGE_HALF_WIDTH + 20f)
             ground.y = -6f
             ground.isGround = true
             world.add(ground)

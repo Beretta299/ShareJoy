@@ -67,16 +67,12 @@ fun GameScreen(session: GameSession) {
 
     Box(Modifier.fillMaxSize().background(Color.Black).onSizeChanged { rootSize = it }) {
         if (paired) {
-            // Two phones standing side by side. Each shows its owner's half and never moves its camera.
+            // Two phones standing side by side. Each rests on its owner's home and travels with a shot in the air.
             Row(Modifier.fillMaxSize()) {
                 for (player in 0..1) {
                     if (player == 1) Spacer(Modifier.width(SEAM))
                     Box(Modifier.weight(1f).fillMaxSize().clip(RoundedCornerShape(18.dp)).onSizeChanged { if (player == 0) canvasSize = it }) {
-                        val camera = remember { Camera() }
-                        WorldCanvas(session, textures, { frame }, seamless = true) { w, h ->
-                            session.fixedCamera(player, w / h, camera)
-                            camera
-                        }
+                        WorldCanvas(session, textures, { frame }, seamless = true) { _, _ -> session.pairCameras[player] }
                         Hud(session, viewer = player)
                     }
                 }

@@ -12,7 +12,9 @@ picture, with the gorge running down the seam.
 This is the **playable prototype**. Both players share one phone: the screen shows one half, exactly what
 that player's phone will show later, and the camera slides across to whoever is up. On a wide screen (a
 tablet, or the desktop window stretched wide) the app previews the paired game: two phone screens side by
-side, each fixed on its own half with its own HUD, and shots cross the seam from one to the other.
+side, each with its own HUD. At rest each phone shows its owner's tower. There is open ground between the
+two towers that neither phone shows at rest: when a shot is fired the two screens lock into one window that
+travels with it across that ground, then each camera glides back home.
 Pairing two phones is the next big step (see the project plan).
 
 ## Run it

@@ -50,7 +50,7 @@ class GameTest {
         val before = game.blockCount(1)
         var best = 0
         // Sweep a few pulls and make sure at least one wrecks something.
-        for (px in listOf(-1.0f, -1.3f, -1.6f, -1.9f)) for (py in listOf(-1.0f, -1.3f, -1.6f, -1.9f)) {
+        for (px in listOf(-1.0f, -1.2f, -1.4f, -1.6f, -1.8f, -2.0f)) for (py in listOf(-0.8f, -1.1f, -1.4f, -1.7f)) {
             val g = Game()
             g.fire(px, py)
             val t = g.runUntilPlan()
