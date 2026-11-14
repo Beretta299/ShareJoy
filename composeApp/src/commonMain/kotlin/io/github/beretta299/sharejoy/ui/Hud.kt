@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,11 +82,11 @@ fun Hud(session: GameSession) {
 private fun AmmoPicker(hud: HudState, session: GameSession) {
     Row(
         Modifier.clip(PanelShape).background(Panel).border(1.dp, Gold.copy(alpha = 0.5f), PanelShape)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Label("Ammo", 11, Muted)
         hud.ammo.forEach { ammo ->
             val selected = ammo == hud.selectedAmmo
             Label(
@@ -93,49 +94,50 @@ private fun AmmoPicker(hud: HudState, session: GameSession) {
                 modifier = Modifier.clip(RoundedCornerShape(7.dp))
                     .background(if (selected) Gold else PanelLight)
                     .clickable { session.selectAmmo(ammo) }
-                    .padding(horizontal = 9.dp, vertical = 4.dp),
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
             )
         }
     }
 }
 
+/** Built for a narrow portrait phone: badges on one line, then the hint and the ammo picker stacked below. */
 @Composable
 private fun BoxScope.TopBar(hud: HudState, session: GameSession) {
     val onRestart = session::restart
-    Row(Modifier.fillMaxWidth().align(Alignment.TopCenter), verticalAlignment = Alignment.Top) {
-        PlayerBadge(0, hud)
-        Spacer(Modifier.weight(1f))
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(
+    Column(
+        Modifier.fillMaxWidth().align(Alignment.TopCenter),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            PlayerBadge(0, hud)
+            Spacer(Modifier.weight(1f))
+            Column(
                 Modifier.clip(PanelShape).background(Panel).border(1.dp, Gold.copy(alpha = 0.5f), PanelShape)
-                    .padding(horizontal = 14.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .clickable(onClick = onRestart).padding(horizontal = 10.dp, vertical = 3.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Label("Round ${hud.round}  ·  Turn ${hud.turn}", 13)
-                if (hud.suddenDeath) {
-                    Spacer(Modifier.width(10.dp))
-                    Label("SUDDEN DEATH ×2", 12, Color(0xFFFF7A5C), FontWeight.Bold)
-                }
-                Spacer(Modifier.width(12.dp))
-                Label("Restart", 12, Muted, modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onRestart).padding(4.dp))
+                Label("R${hud.round} · Turn ${hud.turn}", 12)
+                Label("Restart", 10, Muted)
             }
-            val hint = when (hud.phase) {
-                Phase.PLAN -> if (hud.aiming) "Release to fire" else "${NAMES[hud.current]}: spend points, then drag the slingshot back"
-                Phase.BUILDING -> "Building…"
-                Phase.RESOLVING -> ""
-                else -> ""
-            }
-            if (hint.isNotEmpty()) {
-                Spacer(Modifier.height(4.dp))
-                Label(hint, 12, Parchment, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x99000000)).padding(horizontal = 10.dp, vertical = 3.dp))
-            }
-            if (hud.phase == Phase.PLAN && !hud.aiming && hud.ammo.size > 1) {
-                Spacer(Modifier.height(4.dp))
-                AmmoPicker(hud, session)
-            }
+            Spacer(Modifier.weight(1f))
+            PlayerBadge(1, hud)
         }
-        Spacer(Modifier.weight(1f))
-        PlayerBadge(1, hud)
+        if (hud.suddenDeath) {
+            Label(
+                "SUDDEN DEATH ×2", 12, Color(0xFFFF7A5C), FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x99000000)).padding(horizontal = 10.dp, vertical = 3.dp),
+            )
+        }
+        val hint = when (hud.phase) {
+            Phase.PLAN -> if (hud.aiming) "Release to fire" else "${NAMES[hud.current]}: build, then pull the slingshot back"
+            Phase.BUILDING -> "Building…"
+            else -> ""
+        }
+        if (hint.isNotEmpty()) {
+            Label(hint, 12, Parchment, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0x99000000)).padding(horizontal = 10.dp, vertical = 3.dp))
+        }
+        if (hud.phase == Phase.PLAN && !hud.aiming && hud.ammo.size > 1) AmmoPicker(hud, session)
     }
 }
 
@@ -148,11 +150,11 @@ private fun PlayerBadge(index: Int, hud: HudState) {
             .clip(PanelShape)
             .background(Brush.horizontalGradient(if (index == 0) listOf(color.copy(alpha = 0.85f), Panel) else listOf(Panel, color.copy(alpha = 0.85f))))
             .border(if (active) 2.dp else 1.dp, if (active) Gold else Gold.copy(alpha = 0.35f), PanelShape)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Label(NAMES[index], 15, Parchment, FontWeight.Bold)
+        Label(NAMES[index], 14, Parchment, FontWeight.Bold)
         // Rounds won.
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             repeat(Balance.ROUNDS_TO_WIN) { i ->
@@ -180,26 +182,29 @@ private fun Coin(amount: Int, dim: Boolean = false) {
     }
 }
 
+/** Two rows of three cards, so everything fits the width of a portrait phone without scrolling. */
 @Composable
 private fun BuildBar(hud: HudState, session: GameSession) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            Track.entries.forEachIndexed { i, track ->
-                val level = hud.levels.getOrElse(i) { 0 }
-                UpgradeCard(
-                    title = track.title,
-                    subtitle = nextPerk(track, level),
-                    level = level,
-                    cost = hud.costs.getOrNull(i),
-                    enabled = hud.canBuy.getOrElse(i) { false },
-                    onClick = { session.buy(track) },
-                )
+    Column(Modifier.widthIn(max = 440.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Track.entries.chunked(3).forEachIndexed { row, tracks ->
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                tracks.forEach { track ->
+                    val i = track.ordinal
+                    val level = hud.levels.getOrElse(i) { 0 }
+                    UpgradeCard(
+                        Modifier.weight(1f),
+                        title = track.title,
+                        subtitle = nextPerk(track, level),
+                        level = level,
+                        cost = hud.costs.getOrNull(i),
+                        enabled = hud.canBuy.getOrElse(i) { false },
+                        onClick = { session.buy(track) },
+                    )
+                }
+                if (row == 1) {
+                    UpgradeCard(Modifier.weight(1f), "Repair", "Mend ${Balance.REPAIR_BLOCKS} blocks", null, Balance.REPAIR_COST, hud.canRepair) { session.repair() }
+                }
             }
-            UpgradeCard("Repair", "Mend ${Balance.REPAIR_BLOCKS} blocks", null, Balance.REPAIR_COST, hud.canRepair) { session.repair() }
         }
     }
 }
@@ -208,15 +213,14 @@ private fun nextPerk(track: Track, level: Int): String = when (track) {
     Track.POWER -> listOf("+11% speed", "+22% speed", "+33% speed", "Max power")[level]
     Track.AIM -> listOf("Longer guide", "Long guide", "Full arc", "Full arc")[level]
     Track.AMMO -> listOf(Ammo.SPLIT.title, Ammo.IRON.title, Ammo.KEG.title, "All unlocked")[level]
-    Track.MATERIALS -> listOf("Stone hall", "Iron pillars", "Buttresses", "Fortified")[level]
-    Track.COVER -> listOf("Parapet", "Second roof", "Barricade", "Covered")[level]
+    Track.MATERIALS -> listOf("Stone hall", "Iron pillars", "Iron wall", "Fortified")[level]
+    Track.COVER -> listOf("Parapet", "Second roof", "High wall", "Covered")[level]
 }
 
 @Composable
-private fun UpgradeCard(title: String, subtitle: String, level: Int?, cost: Int?, enabled: Boolean, onClick: () -> Unit) {
+private fun UpgradeCard(modifier: Modifier, title: String, subtitle: String, level: Int?, cost: Int?, enabled: Boolean, onClick: () -> Unit) {
     Column(
-        Modifier
-            .width(104.dp)
+        modifier
             .alpha(if (enabled || cost == null) 1f else 0.62f)
             .clip(PanelShape)
             .background(Brush.verticalGradient(if (enabled) listOf(PanelLight, Panel) else listOf(Panel, Panel)))
@@ -234,7 +238,7 @@ private fun UpgradeCard(title: String, subtitle: String, level: Int?, cost: Int?
         if (level != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 2.dp)) {
                 repeat(3) { i ->
-                    Box(Modifier.width(22.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (i < level) Gold else Color(0x66000000)))
+                    Box(Modifier.width(20.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (i < level) Gold else Color(0x66000000)))
                 }
             }
         } else {
@@ -257,12 +261,12 @@ private fun BoxScope.RoundOver(hud: HudState, onNext: () -> Unit) {
     val matchOver = hud.phase == Phase.MATCH_OVER
     val accent = if (hud.roundWinner >= 0) PLAYER_COLORS[hud.roundWinner] else Gold
     // Sits over the ground, so the fallen Keeper stays in view.
-    Row(
-        Modifier.align(Alignment.BottomCenter)
+    Column(
+        Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp)
             .clip(PanelShape).background(Panel).border(2.dp, accent, PanelShape)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(18.dp),
+            .padding(horizontal = 22.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         val title = when {
             hud.roundWinner < 0 -> "Both Keepers fell: a draw"

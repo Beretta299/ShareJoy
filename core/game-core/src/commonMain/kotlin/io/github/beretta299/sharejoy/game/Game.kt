@@ -79,8 +79,8 @@ class Game {
         players.forEach { it.resetForRound() }
 
         for (s in intArrayOf(-1, 1)) {
-            val ground = Body(world.newId(), halfW = 21f, halfH = 6f, density = 0f, friction = 0.9f)
-            ground.x = s * (Balance.GORGE_HALF_WIDTH + 21f)
+            val ground = Body(world.newId(), halfW = 15f, halfH = 6f, density = 0f, friction = 0.9f)
+            ground.x = s * (Balance.GORGE_HALF_WIDTH + 15f)
             ground.y = -6f
             ground.isGround = true
             world.add(ground)
@@ -163,7 +163,10 @@ class Game {
             Track.MATERIALS -> when (level) {
                 1 -> reinforce(player.index, Role.UPPER_PILLAR, Material.STONE)
                 2 -> reinforce(player.index, Role.GROUND_PILLAR, Material.IRON)
-                else -> place(Castle.buttresses, player.index)
+                else -> {
+                    reinforce(player.index, Role.FRONT_WALL, Material.IRON)
+                    place(Castle.buttresses, player.index)
+                }
             }
             Track.COVER -> place(Castle.cover[level - 1], player.index)
         }

@@ -9,7 +9,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "ShareJoy: Castle Duel (prototype)",
-        state = rememberWindowState(width = 1280.dp, height = 620.dp),
+        state = rememberWindowState(width = 420.dp, height = 900.dp),
     ) {
         App()
     }

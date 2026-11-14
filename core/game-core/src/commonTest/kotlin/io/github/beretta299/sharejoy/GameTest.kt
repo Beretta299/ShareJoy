@@ -36,7 +36,7 @@ class GameTest {
     fun aMissedShotPassesTheTurnAndPaysIncome() {
         val game = Game()
         assertEquals(0, game.current)
-        assertTrue(game.fire(-0.5f, -2.5f)) // nearly straight up
+        assertTrue(game.fire(-0.3f, -2.1f)) // nearly straight up
         val t = game.runUntilPlan()
         println("lob resolved in $t s, turn=${game.turn}")
         assertEquals(1, game.current)
@@ -50,12 +50,12 @@ class GameTest {
         val before = game.blockCount(1)
         var best = 0
         // Sweep a few pulls and make sure at least one wrecks something.
-        for (py in listOf(-0.6f, -0.9f, -1.2f, -1.5f)) {
+        for (px in listOf(-1.0f, -1.3f, -1.6f, -1.9f)) for (py in listOf(-1.0f, -1.3f, -1.6f, -1.9f)) {
             val g = Game()
-            g.fire(-2.4f, py)
+            g.fire(px, py)
             val t = g.runUntilPlan()
             val lost = before - g.blockCount(1)
-            println("pull y=$py: lost $lost blocks, keeperDown=${g.keeperDown[1]}, phase=${g.phase}, t=$t")
+            println("pull $px,$py: lost $lost blocks, keeperDown=${g.keeperDown[1]}, phase=${g.phase}, t=$t")
             best = maxOf(best, lost)
         }
         assertTrue(best > 0)
@@ -68,7 +68,7 @@ class GameTest {
         val blocks = game.blockCount(0)
         assertTrue(game.buy(Track.COVER))
         assertEquals(10, game.players[0].points)
-        assertEquals(blocks + 3, game.blockCount(0))
+        assertEquals(blocks + 2, game.blockCount(0))
         game.runUntilPlan()
         assertEquals(Phase.PLAN, game.phase)
         assertTrue(game.buy(Track.AMMO))
@@ -79,7 +79,7 @@ class GameTest {
     fun simulationIsDeterministic() {
         fun run(): List<Float> {
             val g = Game()
-            g.fire(-2.4f, -1.1f)
+            g.fire(-1.6f, -1.4f)
             g.runUntilPlan()
             return g.pieces.flatMap { listOf(it.body.x, it.body.y, it.body.angle) }
         }

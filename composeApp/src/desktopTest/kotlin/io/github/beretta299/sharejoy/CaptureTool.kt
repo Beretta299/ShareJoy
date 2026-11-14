@@ -19,8 +19,8 @@ import kotlin.test.Test
 class CaptureTool {
     private val enabled = System.getProperty("capture") == "true"
     private val video = System.getProperty("capture.video") == "true"
-    private val width = (System.getProperty("capture.width") ?: "1600").toInt()
-    private val height = (System.getProperty("capture.height") ?: "740").toInt()
+    private val width = (System.getProperty("capture.width") ?: "720").toInt()
+    private val height = (System.getProperty("capture.height") ?: "1560").toInt()
     private val out = File(System.getProperty("capture.dir") ?: "build/capture")
     private val session = GameSession()
     private var nanos = 0L
@@ -71,7 +71,7 @@ class CaptureTool {
         if (!enabled) return
         out.mkdirs()
         File(out, "frames").mkdirs()
-        val scene = ImageComposeScene(width, height, Density(width / 800f)) { App(session) }
+        val scene = ImageComposeScene(width, height, Density((System.getProperty("capture.density") ?: "2").toFloat())) { App(session) }
         with(scene) {
             // Give both sides a full purse so the script can show every kind of upgrade.
             session.game.players.forEach { it.points = 12 }
@@ -79,7 +79,7 @@ class CaptureTool {
             shot("01_red_plan")
             session.buy(Track.AMMO)
             frames(40)
-            aimAndFire(-2.45f, -1.15f, "02_red_aim")
+            aimAndFire(-1.6f, -1.4f, "02_red_aim")
             frames(52); session.tap(); frames(8)
             shot("03_split_shot")
             frames(40); shot("04_impact")
@@ -91,15 +91,15 @@ class CaptureTool {
             waitForPlan(); frames(30)
             session.buy(Track.MATERIALS)
             frames(40)
-            aimAndFire(2.5f, -1.0f, "07_blue_aim")
+            aimAndFire(1.7f, -1.5f, "07_blue_aim")
             frames(100); shot("08_blue_impact")
             waitForPlan(); frames(60)
 
             val script = listOf(
-                Triple(-2.5f, -1.05f, Ammo.KEG), Triple(2.5f, -1.15f, Ammo.STONE),
-                Triple(-2.5f, -1.2f, Ammo.IRON), Triple(2.45f, -1.0f, Ammo.STONE),
-                Triple(-2.5f, -0.95f, Ammo.KEG), Triple(2.5f, -1.25f, Ammo.STONE),
-                Triple(-2.5f, -1.1f, Ammo.IRON), Triple(2.5f, -0.9f, Ammo.STONE),
+                Triple(-1.6f, -1.5f, Ammo.KEG), Triple(1.5f, -1.5f, Ammo.STONE),
+                Triple(-1.9f, -1.2f, Ammo.IRON), Triple(1.8f, -1.3f, Ammo.STONE),
+                Triple(-1.5f, -1.7f, Ammo.KEG), Triple(1.6f, -1.6f, Ammo.STONE),
+                Triple(-1.7f, -1.5f, Ammo.IRON), Triple(1.9f, -1.2f, Ammo.STONE),
             )
             var i = 0
             while (!over() && i < script.size) {

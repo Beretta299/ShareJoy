@@ -42,7 +42,7 @@ class Particles {
                 when (p.kind) {
                     ParticleKind.DEBRIS, ParticleKind.SPARK -> {
                         p.vy -= 9.81f * dt
-                        if (p.y < 0.05f && p.vy < 0f && kotlin.math.abs(p.x) > 3f) {
+                        if (p.y < 0.05f && p.vy < 0f && kotlin.math.abs(p.x) > io.github.beretta299.sharejoy.game.Balance.GORGE_HALF_WIDTH) {
                             // Rubble bounces once or twice on the ground, then lies still.
                             p.y = 0.05f
                             p.vy = -p.vy * 0.3f

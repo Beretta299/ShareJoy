@@ -83,7 +83,7 @@ fun DrawScope.drawWorld(session: GameSession, tex: Textures) {
     drawRect(
         Brush.radialGradient(
             0.55f to Color.Transparent, 1f to Color(0x59000000),
-            center = Offset(size.width / 2f, size.height / 2f), radius = size.width * 0.72f,
+            center = Offset(size.width / 2f, size.height / 2f), radius = max(size.width, size.height) * 0.72f,
         ),
     )
     if (game.suddenDeath && game.phase != Phase.ROUND_OVER && game.phase != Phase.MATCH_OVER) {
@@ -102,15 +102,16 @@ private fun DrawScope.drawSky(view: View, time: Float) {
         ),
     )
     // Sun with a wide glow.
-    val sun = Offset(size.width * 0.74f - view.cx * view.scale * 0.03f, horizon - size.height * 0.5f)
-    drawCircle(Brush.radialGradient(listOf(Color(0x66FFF3C4), Color.Transparent), center = sun, radius = size.height * 0.5f), size.height * 0.5f, sun)
-    drawCircle(Color(0xFFFFF6D8), size.height * 0.045f, sun)
+    val sun = Offset(size.width * 0.74f - view.cx * view.scale * 0.03f, horizon - size.height * 0.46f)
+    val unit = min(size.width, size.height)
+    drawCircle(Brush.radialGradient(listOf(Color(0x66FFF3C4), Color.Transparent), center = sun, radius = unit * 0.6f), unit * 0.6f, sun)
+    drawCircle(Color(0xFFFFF6D8), unit * 0.06f, sun)
 
     // Clouds drift slowly; far layers move less than the camera.
     for (i in 0 until 9) {
         val wx = -130f + i * 31f + hash(i) * 14f + time * 0.35f
         val px = size.width / 2f + (wx - view.cx) * view.scale * 0.16f
-        val py = horizon - size.height * (0.5f + hash(i + 40) * 0.36f)
+        val py = horizon - size.height * (0.3f + hash(i + 40) * 0.36f)
         val s = view.scale * (0.7f + hash(i + 80) * 0.7f)
         for (k in 0 until 5) {
             val ox = (k - 2) * 1.5f * s

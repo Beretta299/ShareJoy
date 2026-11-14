@@ -19,9 +19,9 @@ import kotlin.math.sqrt
 
 /** Where the camera looks: the centre of the view in world metres and how many metres fit across the screen. */
 class Camera {
-    var cx = -15.5f
-    var cy = 4f
-    var viewW = 31f
+    var cx = -6.5f
+    var cy = 6f
+    var viewW = 13f
 }
 
 /** Everything the HUD shows. A data class, so Compose only recomposes when something actually changed. */
@@ -46,7 +46,9 @@ data class HudState(
 
 /**
  * Glue between the pure game and the screen: fixed-step loop, camera, aiming input and cosmetic effects.
- * One screen shows the whole 1v1 match; the camera pans to whichever player is up.
+ * A portrait screen shows one player's half of the battlefield, exactly what that player's phone will show
+ * when two phones stand side by side, and the camera slides to whoever is up. A wide screen (a tablet, or a
+ * desktop window) shows both halves joined into one picture.
  */
 class GameSession {
     val game = Game()
@@ -75,7 +77,11 @@ class GameSession {
     private var panOffset = 0f
     private var lastCurrent = 0
     private var lingerX = 0f
-    private var aspect = 2f
+    private var sized = false
+    private var aspect = 0.46f
+
+    /** True when the screen is wide enough to show both halves at once. */
+    val wide: Boolean get() = aspect > WIDE_ASPECT
 
     init {
         snapCamera()
@@ -85,7 +91,12 @@ class GameSession {
     // ------------------------------------------------------------------ loop
 
     fun advance(realDt: Float, screenAspect: Float) {
+        val wasWide = wide
         aspect = screenAspect
+        if (!sized || wasWide != wide) {
+            sized = true
+            snapCamera()
+        }
         val dt = min(realDt, 0.05f)
         time += dt
         val scale = if (slowMo > 0f) 0.28f else 1f
@@ -145,17 +156,20 @@ class GameSession {
 
     private fun viewH(viewW: Float) = viewW / aspect
 
-    private fun homeX(player: Int) = game.side(player) * 15.5f
+    private fun homeX(player: Int) = if (wide) 0f else game.side(player) * Balance.HALF_WORLD / 2f
+
+    /** Metres across the screen: one half in portrait, the whole field (and at least a tower's height) when wide. */
+    private fun homeView() = if (wide) max(2f * Balance.HALF_WORLD, MIN_VIEW_HEIGHT * aspect) else Balance.HALF_WORLD
 
     private fun snapCamera() {
         camera.cx = homeX(game.current)
-        camera.viewW = HOME_VIEW
-        camera.cy = viewH(HOME_VIEW) * GROUND_LINE
+        camera.viewW = homeView()
+        camera.cy = viewH(camera.viewW) * GROUND_LINE
     }
 
     private fun updateCamera(dt: Float) {
         var tx: Float
-        var tw = HOME_VIEW
+        val tw = homeView()
         var ty = -1f
         when (game.phase) {
             Phase.PLAN, Phase.BUILDING, Phase.HANDOVER -> tx = homeX(game.current) + panOffset
@@ -165,26 +179,24 @@ class GameSession {
                 if (flying.isNotEmpty()) {
                     val b = flying[0].body
                     tx = b.x + b.vx * 0.25f
-                    tw = FLIGHT_VIEW
                     // Keep a high lob on screen.
                     ty = max(viewH(tw) * GROUND_LINE, b.y - viewH(tw) * 0.22f)
                     lingerX = b.x
                 } else {
                     // Stay on the castle that was hit while it settles.
-                    tx = if (shots.isNotEmpty()) shots[0].body.x else lingerX
-                    tx = tx.coerceIn(-22f, 22f)
-                    if (kotlin.math.abs(tx) < 12f) tx = homeX(1 - game.current)
+                    val hitX = if (shots.isNotEmpty()) shots[0].body.x else lingerX
+                    val enemy = 1 - game.current
+                    tx = if (hitX * game.side(enemy) >= -Balance.GORGE_HALF_WIDTH) homeX(enemy) else homeX(game.current)
                 }
             }
             Phase.ROUND_OVER, Phase.MATCH_OVER -> {
                 val loser = if (game.keeperDown[0]) 0 else 1
-                tx = game.keeper(loser)?.body?.x ?: 0f
-                tw = 24f
+                tx = homeX(loser)
             }
         }
         if (ty < 0f) ty = viewH(tw) * GROUND_LINE
 
-        val limit = Balance.HALF_WORLD - 4f - tw / 2f
+        val limit = max(0f, Balance.HALF_WORLD - tw / 2f)
         tx = tx.coerceIn(-limit, limit)
         val k = 1f - exp(-dt * 3.2f)
         camera.cx += (tx - camera.cx) * k
@@ -238,7 +250,7 @@ class GameSession {
     }
 
     fun pan(worldDx: Float) {
-        if (game.phase == Phase.PLAN && !aiming) panOffset = (panOffset - worldDx).coerceIn(-45f, 45f)
+        if (game.phase == Phase.PLAN && !aiming) panOffset = (panOffset - worldDx).coerceIn(-Balance.HALF_WORLD, Balance.HALF_WORLD)
     }
 
     fun tap() {
@@ -311,11 +323,11 @@ class GameSession {
 
     companion object {
         const val STEP = 1f / 60f
-        const val HOME_VIEW = 31f
-        const val FLIGHT_VIEW = 36f
+        const val WIDE_ASPECT = 0.8f
+        const val MIN_VIEW_HEIGHT = 17f
 
         /** The ground sits this far up the screen, as a fraction of the view height below centre. */
-        const val GROUND_LINE = 0.27f
-        const val GRAB_RADIUS = 2.6f
+        const val GROUND_LINE = 0.25f
+        const val GRAB_RADIUS = 2.2f
     }
 }

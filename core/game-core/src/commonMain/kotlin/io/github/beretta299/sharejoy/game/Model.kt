@@ -4,7 +4,7 @@ import io.github.beretta299.sharejoy.physics.Body
 
 /** Building materials. Toughness is how much impact (in m/s of delta-v) a block absorbs before breaking. */
 enum class Material(val density: Float, val toughness: Float, val friction: Float) {
-    WOOD(0.7f, 6f, 0.7f),
+    WOOD(0.7f, 7f, 0.7f),
     STONE(2.0f, 12f, 0.8f),
     IRON(5.5f, 26f, 0.7f),
 }
@@ -15,9 +15,9 @@ enum class PieceKind { BLOCK, KEEPER, PROJECTILE }
 enum class Role { GROUND_PILLAR, UPPER_PILLAR, FLOOR_BEAM, ROOF_BEAM, MERLON, FRONT_WALL, COVER, BUTTRESS, NONE }
 
 enum class Ammo(val title: String, val radius: Float, val density: Float, val punch: Float) {
-    STONE("Stone", 0.36f, 5.5f, 2f),
-    SPLIT("Split shot", 0.36f, 5.5f, 2f),
-    IRON("Iron ball", 0.42f, 8f, 3f),
+    STONE("Stone", 0.36f, 5.5f, 2.7f),
+    SPLIT("Split shot", 0.36f, 5.5f, 2.7f),
+    IRON("Iron ball", 0.42f, 8f, 3.5f),
     KEG("Powder keg", 0.42f, 2.2f, 1f),
 }
 
@@ -55,8 +55,8 @@ enum class Track(val title: String, val blurb: String) {
     POWER("Power", "Faster, harder shots"),
     AIM("Aim", "Longer trajectory guide"),
     AMMO("Ammo", "Split shot, iron ball, powder keg"),
-    MATERIALS("Walls", "Stone, iron, buttresses"),
-    COVER("Cover", "Parapet, roof, barricade"),
+    MATERIALS("Walls", "Stone hall, iron pillars, iron wall"),
+    COVER("Cover", "Parapet, roof, high wall"),
 }
 
 class PlayerState(val index: Int) {
@@ -115,13 +115,14 @@ sealed interface GameEvent {
 
 /** All tunable numbers in one place. */
 object Balance {
-    const val HALF_WORLD = 45f
-    const val GORGE_HALF_WIDTH = 3f
-    const val CASTLE_BACK_X = 27f
-    const val SLINGSHOT_X = 10f
+    /** Half the width of the battlefield. Each phone shows one half; the seam between them is x = 0. */
+    const val HALF_WORLD = 13f
+    const val GORGE_HALF_WIDTH = 1.2f
+    const val CASTLE_BACK_X = 12.5f
+    const val SLINGSHOT_X = 3.4f
     const val SLINGSHOT_Y = 2.3f
-    const val MAX_PULL = 2.6f
-    const val BASE_SPEED = 21f
+    const val MAX_PULL = 2.2f
+    const val BASE_SPEED = 15f
     const val POWER_STEP = 0.11f
 
     const val TURN_INCOME = 3
@@ -132,7 +133,7 @@ object Balance {
     val LEVEL_COSTS = intArrayOf(2, 4, 6)
 
     const val DAMAGE_THRESHOLD = 2.0f
-    const val KEEPER_HP = 6f
+    const val KEEPER_HP = 12f
     const val SUDDEN_DEATH_TURN = 12
     const val ROUNDS_TO_WIN = 2
 

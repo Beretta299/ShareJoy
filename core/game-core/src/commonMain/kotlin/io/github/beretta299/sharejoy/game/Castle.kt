@@ -6,41 +6,45 @@ data class BlockSpec(
     val material: Material, val role: Role, val flag: Boolean = false,
 )
 
-/** Blueprints for the starting castle and everything upgrades can add. */
+/**
+ * Blueprints for the starting tower and everything upgrades can add.
+ *
+ * The tower is tall and narrow because each player's half of the battlefield is one portrait phone screen.
+ */
 object Castle {
-    const val KEEPER_X = 4.5f
-    const val KEEPER_Y = 3.2f
+    const val KEEPER_X = 2.5f
+    const val KEEPER_Y = 5.7f
     const val KEEPER_HALF_W = 0.4f
     const val KEEPER_HALF_H = 0.7f
 
+    private const val WALL_X = 6.2f
+
     val base: List<BlockSpec> = buildList {
         // Ground storey: three stone pillars.
-        for (x in listOf(0.5f, 4.5f, 8.5f)) add(BlockSpec(x, 1f, 1f, 2f, Material.STONE, Role.GROUND_PILLAR))
-        // First floor.
-        add(BlockSpec(2.25f, 2.25f, 4.4f, 0.5f, Material.WOOD, Role.FLOOR_BEAM))
-        add(BlockSpec(6.75f, 2.25f, 4.4f, 0.5f, Material.WOOD, Role.FLOOR_BEAM))
-        // Upper storey: the Keeper's hall.
-        for (x in listOf(0.3f, 3.0f, 6.0f, 8.7f)) add(BlockSpec(x, 3.5f, 0.6f, 2f, Material.WOOD, Role.UPPER_PILLAR))
-        add(BlockSpec(2.25f, 4.75f, 4.4f, 0.5f, Material.WOOD, Role.ROOF_BEAM))
-        add(BlockSpec(6.75f, 4.75f, 4.4f, 0.5f, Material.WOOD, Role.ROOF_BEAM))
-        // Battlements, with a taller tower at each end.
-        for (x in listOf(0.5f, 3.0f, 6.0f, 8.5f)) add(BlockSpec(x, 5.5f, 1f, 1f, Material.STONE, Role.MERLON))
-        add(BlockSpec(0.5f, 6.5f, 1f, 1f, Material.STONE, Role.MERLON, flag = true))
-        add(BlockSpec(8.5f, 6.5f, 1f, 1f, Material.STONE, Role.MERLON))
+        for (x in listOf(0.5f, 2.5f, 4.5f)) add(BlockSpec(x, 1f, 1f, 2f, Material.STONE, Role.GROUND_PILLAR))
+        add(BlockSpec(2.5f, 2.25f, 5f, 0.5f, Material.WOOD, Role.FLOOR_BEAM))
+        // Middle storey.
+        for (x in listOf(0.4f, 4.6f)) add(BlockSpec(x, 3.5f, 0.8f, 2f, Material.WOOD, Role.UPPER_PILLAR))
+        add(BlockSpec(2.5f, 4.75f, 5f, 0.5f, Material.WOOD, Role.FLOOR_BEAM))
+        // Top storey: the Keeper's hall.
+        for (x in listOf(0.4f, 4.6f)) add(BlockSpec(x, 6f, 0.8f, 2f, Material.STONE, Role.UPPER_PILLAR))
+        add(BlockSpec(2.5f, 7.25f, 5f, 0.5f, Material.WOOD, Role.ROOF_BEAM))
+        // Battlements, with a turret at the back carrying the flag.
+        for (x in listOf(0.5f, 2.5f, 4.5f)) add(BlockSpec(x, 8f, 1f, 1f, Material.STONE, Role.MERLON))
+        add(BlockSpec(0.5f, 9f, 1f, 1f, Material.STONE, Role.MERLON, flag = true))
         // Curtain wall facing the enemy.
-        for (y in listOf(0.75f, 2.25f, 3.75f)) add(BlockSpec(10.3f, y, 1.3f, 1.5f, Material.STONE, Role.FRONT_WALL))
+        for (y in listOf(0.75f, 2.25f, 3.75f)) add(BlockSpec(WALL_X, y, 1.3f, 1.5f, Material.STONE, Role.FRONT_WALL))
     }
 
     /** Blocks added by each level of the Cover track. */
     val cover: List<List<BlockSpec>> = listOf(
-        listOf(1.75f, 4.5f, 7.25f).map { BlockSpec(it, 5.5f, 1f, 1f, Material.STONE, Role.COVER) },
-        listOf(2.75f, 6.25f).map { BlockSpec(it, 6.2f, 3f, 0.4f, Material.WOOD, Role.COVER) },
-        listOf(0.75f, 2.25f, 3.75f).map { BlockSpec(13.2f, it, 1.3f, 1.5f, Material.STONE, Role.COVER) },
+        listOf(1.5f, 3.5f).map { BlockSpec(it, 8f, 1f, 1f, Material.STONE, Role.COVER) },
+        listOf(BlockSpec(2.9f, 8.7f, 3.6f, 0.4f, Material.WOOD, Role.COVER)),
+        listOf(5.25f, 6.75f).map { BlockSpec(WALL_X, it, 1.3f, 1.5f, Material.STONE, Role.FRONT_WALL) },
     )
 
-    /** Blocks added by the last level of the Walls track. */
+    /** Block added by the last level of the Walls track, bracing the foot of the curtain wall. */
     val buttresses: List<BlockSpec> = listOf(
-        BlockSpec(-0.75f, 0.5f, 1.4f, 1f, Material.STONE, Role.BUTTRESS),
-        BlockSpec(11.7f, 0.5f, 1.4f, 1f, Material.STONE, Role.BUTTRESS),
+        BlockSpec(7.5f, 0.5f, 1.2f, 1f, Material.STONE, Role.BUTTRESS),
     )
 }
