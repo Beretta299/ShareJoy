@@ -1,12 +1,11 @@
 package io.github.beretta299.sharejoy.game
 
 import io.github.beretta299.sharejoy.physics.Body
+import io.github.beretta299.sharejoy.physics.DeterministicMath
 import io.github.beretta299.sharejoy.physics.World
 import kotlin.math.abs
-import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -309,8 +308,8 @@ class Game {
         removePiece(shot)
         for (index in -1..1) {
             val turnAngle = index * SPLIT_FAN_ANGLE
-            val cosTurn = cos(turnAngle)
-            val sinTurn = sin(turnAngle)
+            val cosTurn = DeterministicMath.cos(turnAngle)
+            val sinTurn = DeterministicMath.sin(turnAngle)
             val body = projectileBody(SPLIT_FRAGMENT_RADIUS, SPLIT_FRAGMENT_DENSITY, SPLIT_FRAGMENT_IMPACT_MULTIPLIER)
             body.x = parent.x
             body.y = parent.y + index * SPLIT_FRAGMENT_SPACING

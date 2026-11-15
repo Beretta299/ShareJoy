@@ -39,5 +39,6 @@ fun MatchHud(hud: MatchUiState, viewer: Int?, onAction: (MatchAction) -> Unit) {
         if (hud.phase == Phase.ROUND_OVER || hud.phase == Phase.MATCH_OVER) {
             RoundOver(hud, onNext = { onAction(MatchAction.NextRound) })
         }
+        LinkNotice(hud.link, onAction, Modifier.align(Alignment.Center))
     }
 }

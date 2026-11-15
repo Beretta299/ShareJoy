@@ -15,7 +15,7 @@ tablet, or the desktop window stretched wide) the app previews the paired game: 
 side, each with its own HUD. At rest each phone shows its owner's tower. There is open ground between the
 two towers that neither phone shows at rest: when a shot is fired the two screens lock into one window that
 travels with it across that ground, then each camera glides back home.
-Pairing two phones is the next big step (see the project plan).
+Two Android phones can also pair for real: see *Pairing two phones* below.
 
 ## Run it
 
@@ -80,7 +80,7 @@ to the effects and cameras, and publishes a new `MatchUiState`. The HUD recompos
 changes. The canvas redraws every frame from `MatchScene`, because a world that moves sixty times a second is
 not worth copying into immutable state.
 
-There is no data layer yet. It arrives with pairing and the backend, as repositories behind domain interfaces.
+The data layer so far is `data/link`: the `PeerLink` interface, its wire protocol, and the Android implementation.
 
 Things worth a look:
 
@@ -101,5 +101,19 @@ Things worth a look:
 
 ## Not in the prototype yet
 
-Two-device pairing and netcode, a bot opponent, sound and haptics, turn timers, wind, commissioned art,
+iOS pairing (MultipeerConnectivity), matching the picture scale across different screen sizes, a bot opponent, sound and haptics, turn timers, wind, commissioned art,
 the backend, analytics, ads and purchases, and Roborazzi screenshot tests. They are all in the plan.
+
+## Pairing two phones
+
+From the lobby one phone taps **Host a game** and the other **Join a game**. They find each other with Google
+Nearby Connections (Bluetooth and Wi-Fi, no internet). The host plays the left castle, the guest the right, and
+each phone shows its own half, so standing side by side they form one picture.
+
+* **Lockstep, not streaming.** Phones never send positions. Each runs the same simulation and they exchange only
+  `GameCommand`s (buy, repair, select ammo, fire, split). `LockstepSync` schedules every command a few ticks
+  ahead and lets a phone simulate a tick only after the other has confirmed its commands for it.
+* **Bit-identical physics.** The simulation uses `DeterministicMath` for sine and cosine, so results do not
+  depend on the device. Twice a second the phones compare a checksum of the game and report if they drift.
+* **Swappable transport.** `PeerLink` is a plain byte channel. `NearbyPeerLink` (Android) implements it; tests use
+  an in-memory pair with artificial latency (`PairedMatchTest`).

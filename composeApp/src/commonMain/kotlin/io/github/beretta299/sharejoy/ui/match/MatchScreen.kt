@@ -73,8 +73,9 @@ fun MatchRoute(viewModel: MatchViewModel) {
 }
 
 /**
- * A portrait screen is one phone: it shows one half and the camera slides to whoever is up. A wide screen
- * previews two paired phones side by side, each with its own camera and its own HUD.
+ * A phone paired with another shows its owner's half of the joined picture. Otherwise a portrait screen is one
+ * shared phone: it shows one half and the camera slides to whoever is up. A wide screen previews two paired
+ * phones side by side, each with its own camera and its own HUD.
  */
 @Composable
 fun MatchScreen(
@@ -90,7 +91,15 @@ fun MatchScreen(
     val paired = rootSize.width > rootSize.height * PAIRED_ASPECT
 
     Box(Modifier.fillMaxSize().background(Color.Black).onSizeChanged { rootSize = it }) {
-        if (paired) {
+        val localPlayer = state.localPlayer
+        if (localPlayer != null) {
+            // One of two real paired phones: show only this phone's half of the joined picture.
+            PhoneScreen(
+                Modifier.fillMaxSize().onSizeChanged(onPhoneSize),
+                state, scene, textures, frame, onAction, pointer,
+                camera = { scene.pairCameras[localPlayer] }, viewer = localPlayer,
+            )
+        } else if (paired) {
             Row(Modifier.fillMaxSize()) {
                 for (player in 0..1) {
                     if (player == 1) Spacer(Modifier.width(SEAM))

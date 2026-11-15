@@ -5,6 +5,7 @@ agp = "8.13.2"
 activityCompose = "1.10.1"
 coroutines = "1.10.2"
 lifecycle = "2.10.0"
+playServicesNearby = "19.5.1"
 androidCompileSdk = "36"
 androidMinSdk = "24"
 
@@ -13,6 +14,7 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
+play-services-nearby = { module = "com.google.android.gms:play-services-nearby", version.ref = "playServicesNearby" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]

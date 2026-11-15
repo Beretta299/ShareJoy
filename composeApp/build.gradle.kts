@@ -39,6 +39,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
+            implementation(libs.play.services.nearby)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
