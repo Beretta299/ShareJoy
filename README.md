@@ -101,7 +101,7 @@ Things worth a look:
 
 ## Not in the prototype yet
 
-iOS pairing (MultipeerConnectivity), matching the picture scale across different screen sizes, a bot opponent, sound and haptics, turn timers, wind, commissioned art,
+iOS pairing (MultipeerConnectivity), bezel compensation at the seam, a bot opponent, sound and haptics, turn timers, wind, commissioned art,
 the backend, analytics, ads and purchases, and Roborazzi screenshot tests. They are all in the plan.
 
 ## Pairing two phones
@@ -117,3 +117,7 @@ each phone shows its own half, so standing side by side they form one picture.
   depend on the device. Twice a second the phones compare a checksum of the game and report if they drift.
 * **Swappable transport.** `PeerLink` is a plain byte channel. `NearbyPeerLink` (Android) implements it; tests use
   an in-memory pair with artificial latency (`PairedMatchTest`).
+* **Any two screen sizes line up.** When pairing, the phones swap their real screen sizes in millimetres.
+  `CameraDirector` then draws both at the same real-world scale (the narrower phone shows 13 m; a wider one shows
+  more) and puts the ground the same distance above each phone's bottom edge. Stand both phones on one table and
+  the ground line runs straight across.

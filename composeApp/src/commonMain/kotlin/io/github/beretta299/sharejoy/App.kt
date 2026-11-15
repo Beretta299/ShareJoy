@@ -59,6 +59,7 @@ fun App(pairingPlatform: PairingPlatform? = null) {
                 val match = remember(current) {
                     MatchViewModel(
                         sync = LockstepSync(current.match.link, localPlayer = current.match.role.player),
+                        pairedScreens = current.match.screens,
                         onLeave = { destination = Destination.Lobby },
                     )
                 }

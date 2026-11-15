@@ -3,9 +3,11 @@ package io.github.beretta299.sharejoy.data.link
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.DisplayMetrics
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import io.github.beretta299.sharejoy.model.PhysicalScreen
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -34,7 +36,23 @@ class AndroidPairingPlatform(private val activity: ComponentActivity) : PairingP
         return request.await()
     }
 
+    /** The whole display, because the game runs full screen with the system bars hidden. */
+    override fun physicalScreen(): PhysicalScreen? {
+        val metrics = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        activity.windowManager.defaultDisplay.getRealMetrics(metrics)
+        if (metrics.xdpi <= 0f || metrics.ydpi <= 0f) return null
+        val widthMm = metrics.widthPixels / metrics.xdpi * MM_PER_INCH
+        val heightMm = metrics.heightPixels / metrics.ydpi * MM_PER_INCH
+        // The game is portrait only, whatever way the phone was held when asked.
+        return PhysicalScreen(minOf(widthMm, heightMm), maxOf(widthMm, heightMm)).takeIf { it.isValid }
+    }
+
     override fun createLink(): PeerLink = NearbyPeerLink(activity)
+
+    private companion object {
+        const val MM_PER_INCH = 25.4f
+    }
 
     /** Nearby Connections needs different runtime permissions on each generation of Android. */
     private fun requiredPermissions(): List<String> = buildList {
