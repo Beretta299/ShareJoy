@@ -10,4 +10,7 @@ sealed interface MatchAction {
     data class SelectAmmo(val ammo: Ammo) : MatchAction
     data object NextRound : MatchAction
     data object Restart : MatchAction
+
+    /** Ends a match with another phone and returns to the lobby. */
+    data object Leave : MatchAction
 }

@@ -1,10 +1,8 @@
 package io.github.beretta299.sharejoy.physics
 
 import kotlin.math.abs
-import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -57,8 +55,8 @@ internal class CollisionDetector {
     }
 
     private fun collideBoxWithCircle(box: Body, circle: Body, normalFromCircle: Boolean): Int {
-        val cosAngle = cos(box.angle)
-        val sinAngle = sin(box.angle)
+        val cosAngle = DeterministicMath.cos(box.angle)
+        val sinAngle = DeterministicMath.sin(box.angle)
         // Circle centre in the box's local frame.
         val offsetX = circle.x - box.x
         val offsetY = circle.y - box.y
@@ -114,10 +112,10 @@ internal class CollisionDetector {
     // ------------------------------------------------------------------ boxes
 
     private fun collideBoxes(a: Body, b: Body): Int {
-        val cosA = cos(a.angle)
-        val sinA = sin(a.angle)
-        val cosB = cos(b.angle)
-        val sinB = sin(b.angle)
+        val cosA = DeterministicMath.cos(a.angle)
+        val sinA = DeterministicMath.sin(a.angle)
+        val cosB = DeterministicMath.cos(b.angle)
+        val sinB = DeterministicMath.sin(b.angle)
 
         // Offset from A to B, seen from each box's own frame.
         val offsetX = b.x - a.x

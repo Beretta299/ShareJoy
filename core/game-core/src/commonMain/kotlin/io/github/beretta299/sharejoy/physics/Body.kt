@@ -2,8 +2,6 @@ package io.github.beretta299.sharejoy.physics
 
 import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
  * A rigid body: either an oriented box ([halfWidth] x [halfHeight]) or a circle ([radius] > 0).
@@ -114,11 +112,11 @@ class Body(
 
     /** Half the width of the axis-aligned box that encloses this body at its current angle. */
     fun boundingHalfWidth(): Float =
-        if (isCircle) radius else abs(cos(angle)) * halfWidth + abs(sin(angle)) * halfHeight
+        if (isCircle) radius else abs(DeterministicMath.cos(angle)) * halfWidth + abs(DeterministicMath.sin(angle)) * halfHeight
 
     /** Half the height of the axis-aligned box that encloses this body at its current angle. */
     fun boundingHalfHeight(): Float =
-        if (isCircle) radius else abs(sin(angle)) * halfWidth + abs(cos(angle)) * halfHeight
+        if (isCircle) radius else abs(DeterministicMath.sin(angle)) * halfWidth + abs(DeterministicMath.cos(angle)) * halfHeight
 
     fun speedSquared(): Float = velocityX * velocityX + velocityY * velocityY
 

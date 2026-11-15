@@ -8,6 +8,8 @@ import io.github.beretta299.sharejoy.game.Phase
 import io.github.beretta299.sharejoy.game.Track
 import io.github.beretta299.sharejoy.presentation.match.MatchAction
 import io.github.beretta299.sharejoy.presentation.match.MatchViewModel
+import io.github.beretta299.sharejoy.ui.match.MatchRoute
+import io.github.beretta299.sharejoy.ui.theme.ShareJoyTheme
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
 import kotlin.test.Test
@@ -75,7 +77,7 @@ class CaptureTool {
         if (!enabled) return
         out.mkdirs()
         File(out, "frames").mkdirs()
-        val scene = ImageComposeScene(width, height, Density((System.getProperty("capture.density") ?: "2").toFloat())) { App(viewModel) }
+        val scene = ImageComposeScene(width, height, Density((System.getProperty("capture.density") ?: "2").toFloat())) { ShareJoyTheme { MatchRoute(viewModel) } }
         with(scene) {
             // Give both sides a full purse so the script can show every kind of upgrade.
             game.players.forEach { it.points = 12 }

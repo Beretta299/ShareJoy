@@ -2,6 +2,7 @@ package io.github.beretta299.sharejoy.presentation.match.aim
 
 import io.github.beretta299.sharejoy.game.Balance
 import io.github.beretta299.sharejoy.game.Game
+import io.github.beretta299.sharejoy.game.GameCommand
 import io.github.beretta299.sharejoy.game.Phase
 import kotlin.math.sqrt
 
@@ -43,12 +44,12 @@ class SlingshotAim(private val game: Game) {
         pullY = offsetY
     }
 
-    /** Lets go of the pouch and fires. Returns false if nothing was being aimed. */
-    fun release(): Boolean {
-        if (!active) return false
-        game.fire(pullX, pullY)
+    /** Lets go of the pouch. Returns the shot to fire, or null if nothing was being aimed. */
+    fun release(): GameCommand.Fire? {
+        if (!active) return null
+        val shot = GameCommand.Fire(pullX, pullY)
         cancel()
-        return true
+        return shot
     }
 
     fun cancel() {
