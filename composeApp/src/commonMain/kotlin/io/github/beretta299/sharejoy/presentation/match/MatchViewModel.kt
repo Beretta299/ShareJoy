@@ -44,8 +44,8 @@ class MatchViewModel(private val game: Game = Game()) : ViewModel() {
         override val pullY get() = aim.pullY
         override val anchorX get() = aim.anchorX
         override val anchorY get() = aim.anchorY
-        override fun launchVx() = aim.launchVx()
-        override fun launchVy() = aim.launchVy()
+        override fun launchVelocityX() = aim.launchVelocityX()
+        override fun launchVelocityY() = aim.launchVelocityY()
     }
 
     // ------------------------------------------------------------------ frame loop
@@ -84,7 +84,7 @@ class MatchViewModel(private val game: Game = Game()) : ViewModel() {
 
     fun onAction(action: MatchAction) {
         when (action) {
-            is MatchAction.BuyUpgrade -> game.buy(action.track)
+            is MatchAction.BuyUpgrade -> game.buyUpgrade(action.track)
             MatchAction.Repair -> game.repair()
             is MatchAction.SelectAmmo -> game.selectAmmo(action.ammo)
             MatchAction.NextRound -> startNext(newMatch = game.phase == Phase.MATCH_OVER)
@@ -119,7 +119,7 @@ class MatchViewModel(private val game: Game = Game()) : ViewModel() {
 
     /** A tap anywhere splits a split shot in flight. */
     fun onTap() {
-        game.tapSplit()
+        game.splitShot()
     }
 
     // ------------------------------------------------------------------ UI state
@@ -132,13 +132,13 @@ class MatchViewModel(private val game: Game = Game()) : ViewModel() {
         val player = game.activePlayer
         return MatchUiState(
             phase = game.phase,
-            current = game.current,
+            currentPlayer = game.currentPlayer,
             turn = game.turn,
             round = game.round,
             points = game.players.map { it.points },
             roundsWon = game.players.map { it.roundsWon },
             levels = Track.entries.map { player.level(it) },
-            costs = Track.entries.map { game.cost(it) },
+            costs = Track.entries.map { game.upgradeCost(it) },
             canBuy = Track.entries.map { game.canBuy(it) },
             canRepair = game.canRepair(),
             ammo = player.unlockedAmmo(),

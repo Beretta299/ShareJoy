@@ -36,20 +36,20 @@ internal fun BuildBar(hud: MatchUiState, onAction: (MatchAction) -> Unit) {
         Track.entries.chunked(3).forEachIndexed { row, tracks ->
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 tracks.forEach { track ->
-                    val i = track.ordinal
-                    val level = hud.levels.getOrElse(i) { 0 }
+                    val trackIndex = track.ordinal
+                    val level = hud.levels.getOrElse(trackIndex) { 0 }
                     UpgradeCard(
                         Modifier.weight(1f),
                         title = track.title,
                         subtitle = nextPerk(track, level),
                         level = level,
-                        cost = hud.costs.getOrNull(i),
-                        enabled = hud.canBuy.getOrElse(i) { false },
+                        cost = hud.costs.getOrNull(trackIndex),
+                        enabled = hud.canBuy.getOrElse(trackIndex) { false },
                         onClick = { onAction(MatchAction.BuyUpgrade(track)) },
                     )
                 }
                 if (row == 1) {
-                    UpgradeCard(Modifier.weight(1f), "Repair", "Mend ${Balance.REPAIR_BLOCKS} blocks", null, Balance.REPAIR_COST, hud.canRepair) { onAction(MatchAction.Repair) }
+                    UpgradeCard(Modifier.weight(1f), "Repair", "Mend ${Balance.BLOCKS_PER_REPAIR} blocks", null, Balance.REPAIR_COST, hud.canRepair) { onAction(MatchAction.Repair) }
                 }
             }
         }
@@ -60,7 +60,7 @@ internal fun nextPerk(track: Track, level: Int): String = when (track) {
     Track.POWER -> listOf("+11% speed", "+22% speed", "+33% speed", "Max power")[level]
     Track.AIM -> listOf("Longer guide", "Long guide", "Full arc", "Full arc")[level]
     Track.AMMO -> listOf(Ammo.SPLIT.title, Ammo.IRON.title, Ammo.KEG.title, "All unlocked")[level]
-    Track.MATERIALS -> listOf("Stone hall", "Iron pillars", "Iron wall", "Fortified")[level]
+    Track.WALLS -> listOf("Stone hall", "Iron pillars", "Iron wall", "Fortified")[level]
     Track.COVER -> listOf("Parapet", "Second roof", "High wall", "Covered")[level]
 }
 
@@ -84,8 +84,8 @@ internal fun UpgradeCard(modifier: Modifier, title: String, subtitle: String, le
         Label(subtitle, 11, Muted)
         if (level != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 2.dp)) {
-                repeat(3) { i ->
-                    Box(Modifier.width(20.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (i < level) Gold else Color(0x66000000)))
+                repeat(MAX_LEVEL) { pip ->
+                    Box(Modifier.width(20.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (pip < level) Gold else Color(0x66000000)))
                 }
             }
         } else {
@@ -93,3 +93,6 @@ internal fun UpgradeCard(modifier: Modifier, title: String, subtitle: String, le
         }
     }
 }
+
+/** Pips shown under each upgrade card: one per level the track can reach. */
+private const val MAX_LEVEL = 3

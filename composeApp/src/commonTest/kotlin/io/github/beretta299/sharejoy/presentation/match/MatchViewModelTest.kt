@@ -26,7 +26,7 @@ class MatchViewModelTest {
     @Test
     fun startsWithRedPlanningTheFirstTurn() {
         assertEquals(Phase.PLAN, state.phase)
-        assertEquals(0, state.current)
+        assertEquals(0, state.currentPlayer)
         assertEquals(1, state.turn)
         assertEquals(Track.entries.size, state.levels.size)
         assertEquals(listOf(Ammo.STONE), state.ammo)
@@ -82,7 +82,7 @@ class MatchViewModelTest {
         var guard = 0
         while (state.phase != Phase.PLAN && guard++ < 3000) frames(1)
         assertEquals(Phase.PLAN, state.phase)
-        assertEquals(1, state.current)
+        assertEquals(1, state.currentPlayer)
         assertEquals(2, state.turn)
     }
 
@@ -92,7 +92,7 @@ class MatchViewModelTest {
         frames(30)
         viewModel.onAction(MatchAction.Restart)
         assertEquals(Phase.PLAN, state.phase)
-        assertEquals(0, state.current)
+        assertEquals(0, state.currentPlayer)
         assertEquals(1, state.turn)
         assertEquals(1, state.round)
     }

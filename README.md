@@ -84,7 +84,7 @@ There is no data layer yet. It arrives with pairing and the backend, as reposito
 
 Things worth a look:
 
-* `physics/World.kt`: SAT + clipping for boxes, sequential impulses with warm starting, sleeping. No native
+* `physics/`: `World` steps the simulation, `CollisionDetector` finds contacts (SAT + clipping for boxes), `ContactSolver` applies sequential impulses with warm starting; still bodies sleep. No native
   dependencies, so it runs on every target, and it is deterministic.
 * `render/Textures.kt`: stone, wood and iron textures are painted in code at start-up, so the prototype
   ships without image assets.

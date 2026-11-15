@@ -6,7 +6,8 @@ import io.github.beretta299.sharejoy.game.Phase
 /** Everything the HUD shows. Immutable, so the HUD only recomposes when something actually changed. */
 data class MatchUiState(
     val phase: Phase = Phase.PLAN,
-    val current: Int = 0,
+    /** Index of the player whose turn it is. */
+    val currentPlayer: Int = 0,
     val turn: Int = 1,
     val round: Int = 1,
     val points: List<Int> = listOf(0, 0),

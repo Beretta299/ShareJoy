@@ -20,7 +20,7 @@ class BalanceSimTest {
             var guard = 0
             while (g.phase != Phase.ROUND_OVER && g.phase != Phase.MATCH_OVER && guard++ < 60) {
                 val before = g.blockCount(0) + g.blockCount(1)
-                val s = g.side(g.current)
+                val s = g.sideSign(g.currentPlayer)
                 g.fire(s * (1.0f + rng.nextFloat() * 0.9f), -(0.8f + rng.nextFloat() * 1.0f))
                 var t = 0
                 while (g.phase != Phase.PLAN && g.phase != Phase.ROUND_OVER && g.phase != Phase.MATCH_OVER && t++ < 2000) g.update(1f / 60f)

@@ -93,7 +93,7 @@ class CaptureTool {
             shot("05_blue_plan")
             viewModel.onAction(MatchAction.BuyUpgrade(Track.COVER)); frames(6); shot("06_blue_builds")
             waitForPlan(); frames(30)
-            viewModel.onAction(MatchAction.BuyUpgrade(Track.MATERIALS))
+            viewModel.onAction(MatchAction.BuyUpgrade(Track.WALLS))
             frames(40)
             aimAndFire(1.8f, -1.7f, "07_blue_aim")
             frames(100); shot("08_blue_impact")

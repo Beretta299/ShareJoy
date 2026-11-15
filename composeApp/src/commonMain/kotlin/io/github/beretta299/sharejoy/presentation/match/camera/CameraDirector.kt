@@ -23,17 +23,17 @@ class CameraDirector(private val game: Game) {
     private var aspect = 0.46f
     private var sized = false
     private var panOffset = 0f
-    private var lastCurrent = game.current
+    private var lastCurrent = game.currentPlayer
     private var lingerX = 0f
 
     /** Slides the shared-phone camera sideways, to peek at the enemy tower while planning. */
     fun pan(worldDx: Float) {
-        panOffset = (panOffset - worldDx).coerceIn(-2f * Balance.HALF_WORLD, 2f * Balance.HALF_WORLD)
+        panOffset = (panOffset - worldDx).coerceIn(-2f * Balance.HALF_FIELD_WIDTH, 2f * Balance.HALF_FIELD_WIDTH)
     }
 
     fun resetPan() {
         panOffset = 0f
-        lastCurrent = game.current
+        lastCurrent = game.currentPlayer
     }
 
     fun onShotFired(x: Float) {
@@ -43,7 +43,7 @@ class CameraDirector(private val game: Game) {
     /** [screenAspect] is the width of one phone screen divided by its height. */
     fun update(dt: Float, screenAspect: Float) {
         aspect = screenAspect
-        if (game.current != lastCurrent) resetPan()
+        if (game.currentPlayer != lastCurrent) resetPan()
         val snap = !sized
         sized = true
         updateSingle(dt, snap)
@@ -55,7 +55,7 @@ class CameraDirector(private val game: Game) {
     /** Height of the camera centre that puts the ground [GROUND_LINE] of a screen below the middle. */
     private fun restY() = viewHeight() * GROUND_LINE
 
-    private fun homeX(player: Int) = game.side(player) * (Balance.GAP + Balance.SCREEN_WIDTH) / 2f
+    private fun homeX(player: Int) = game.sideSign(player) * (Balance.OPEN_GROUND_WIDTH + Balance.SCREEN_WIDTH) / 2f
 
     private fun flyingShot() = if (game.phase == Phase.RESOLVING) {
         game.pieces.firstOrNull { it.kind == PieceKind.PROJECTILE && !it.hasHit }?.body
@@ -67,47 +67,47 @@ class CameraDirector(private val game: Game) {
     private fun followY(shotY: Float) = max(restY(), shotY - viewHeight() * LOB_MARGIN)
 
     private fun updateSingle(dt: Float, snap: Boolean) {
-        var ty = restY()
-        val tx = when (game.phase) {
-            Phase.PLAN, Phase.BUILDING, Phase.HANDOVER -> homeX(game.current) + panOffset
+        var targetY = restY()
+        val targetX = when (game.phase) {
+            Phase.PLAN, Phase.BUILDING, Phase.HANDOVER -> homeX(game.currentPlayer) + panOffset
             Phase.RESOLVING -> {
                 val flying = flyingShot()
                 if (flying != null) {
-                    ty = followY(flying.y)
+                    targetY = followY(flying.y)
                     lingerX = flying.x
-                    flying.x + flying.vx * SINGLE_LEAD
+                    flying.x + flying.velocityX * SINGLE_LEAD
                 } else {
                     // Stay on the tower that was hit while it settles.
                     val shot = game.pieces.firstOrNull { it.kind == PieceKind.PROJECTILE }
                     val hitX = shot?.body?.x ?: lingerX
-                    val enemy = 1 - game.current
-                    if (hitX * game.side(enemy) >= -Balance.GORGE_HALF_WIDTH) homeX(enemy) else homeX(game.current)
+                    val enemy = 1 - game.currentPlayer
+                    if (hitX * game.sideSign(enemy) >= -Balance.GORGE_HALF_WIDTH) homeX(enemy) else homeX(game.currentPlayer)
                 }
             }
             Phase.ROUND_OVER, Phase.MATCH_OVER -> homeX(if (game.keeperDown[0]) 0 else 1)
         }
-        val limit = Balance.HALF_WORLD - Balance.SCREEN_WIDTH / 2f
-        glide(single, tx.coerceIn(-limit, limit), ty, dt, SINGLE_SPEED, snap)
+        val limit = Balance.HALF_FIELD_WIDTH - Balance.SCREEN_WIDTH / 2f
+        glide(single, targetX.coerceIn(-limit, limit), targetY, dt, SINGLE_SPEED, snap)
     }
 
     private fun updatePaired(dt: Float, snap: Boolean) {
         val flying = flyingShot()
         // Centre of the joined window: it starts on the shooter's home and ends on the target's.
-        val joined = flying?.let { (it.x + it.vx * PAIRED_LEAD).coerceIn(-Balance.GAP / 2f, Balance.GAP / 2f) }
-        val ty = if (flying != null) followY(flying.y) else restY()
+        val joined = flying?.let { (it.x + it.velocityX * PAIRED_LEAD).coerceIn(-Balance.OPEN_GROUND_WIDTH / 2f, Balance.OPEN_GROUND_WIDTH / 2f) }
+        val targetY = if (flying != null) followY(flying.y) else restY()
         // The idle phone has to close the whole gap before the shot reaches the seam, so it moves briskly.
         val speed = if (flying != null) PAIRED_FLIGHT_SPEED else PAIRED_HOME_SPEED
         for (player in 0..1) {
-            val tx = if (joined != null) joined + game.side(player) * Balance.SCREEN_WIDTH / 2f else homeX(player)
-            glide(paired[player], tx, ty, dt, speed, snap)
+            val targetX = if (joined != null) joined + game.sideSign(player) * Balance.SCREEN_WIDTH / 2f else homeX(player)
+            glide(paired[player], targetX, targetY, dt, speed, snap)
         }
     }
 
-    private fun glide(camera: Camera, tx: Float, ty: Float, dt: Float, speed: Float, snap: Boolean) {
-        camera.viewW = Balance.SCREEN_WIDTH
-        val k = if (snap) 1f else 1f - exp(-dt * speed)
-        camera.cx += (tx - camera.cx) * k
-        camera.cy += (ty - camera.cy) * k
+    private fun glide(camera: Camera, targetX: Float, targetY: Float, dt: Float, speed: Float, snap: Boolean) {
+        camera.viewWidth = Balance.SCREEN_WIDTH
+        val blend = if (snap) 1f else 1f - exp(-dt * speed)
+        camera.centerX += (targetX - camera.centerX) * blend
+        camera.centerY += (targetY - camera.centerY) * blend
     }
 
     companion object {

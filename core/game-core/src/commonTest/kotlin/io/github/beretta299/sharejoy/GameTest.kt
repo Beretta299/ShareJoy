@@ -35,13 +35,13 @@ class GameTest {
     @Test
     fun aMissedShotPassesTheTurnAndPaysIncome() {
         val game = Game()
-        assertEquals(0, game.current)
+        assertEquals(0, game.currentPlayer)
         assertTrue(game.fire(-0.3f, -2.1f)) // nearly straight up
         val t = game.runUntilPlan()
         println("lob resolved in $t s, turn=${game.turn}")
-        assertEquals(1, game.current)
+        assertEquals(1, game.currentPlayer)
         assertEquals(2, game.turn)
-        assertEquals(1 + Balance.TURN_INCOME, game.players[1].points)
+        assertEquals(1 + Balance.POINTS_PER_TURN, game.players[1].points)
     }
 
     @Test
@@ -50,12 +50,12 @@ class GameTest {
         val before = game.blockCount(1)
         var best = 0
         // Sweep a few pulls and make sure at least one wrecks something.
-        for (px in listOf(-1.0f, -1.2f, -1.4f, -1.6f, -1.8f, -2.0f)) for (py in listOf(-0.8f, -1.1f, -1.4f, -1.7f)) {
-            val g = Game()
-            g.fire(px, py)
-            val t = g.runUntilPlan()
-            val lost = before - g.blockCount(1)
-            println("pull $px,$py: lost $lost blocks, keeperDown=${g.keeperDown[1]}, phase=${g.phase}, t=$t")
+        for (pullX in listOf(-1.0f, -1.2f, -1.4f, -1.6f, -1.8f, -2.0f)) for (pullY in listOf(-0.8f, -1.1f, -1.4f, -1.7f)) {
+            val shot = Game()
+            shot.fire(pullX, pullY)
+            val seconds = shot.runUntilPlan()
+            val lost = before - shot.blockCount(1)
+            println("pull $pullX,$pullY: lost $lost blocks, keeperDown=${shot.keeperDown[1]}, phase=${shot.phase}, seconds=$seconds")
             best = maxOf(best, lost)
         }
         assertTrue(best > 0)
@@ -66,12 +66,12 @@ class GameTest {
         val game = Game()
         game.players[0].points = 12
         val blocks = game.blockCount(0)
-        assertTrue(game.buy(Track.COVER))
+        assertTrue(game.buyUpgrade(Track.COVER))
         assertEquals(10, game.players[0].points)
         assertEquals(blocks + 2, game.blockCount(0))
         game.runUntilPlan()
         assertEquals(Phase.PLAN, game.phase)
-        assertTrue(game.buy(Track.AMMO))
+        assertTrue(game.buyUpgrade(Track.AMMO))
         assertEquals(Ammo.SPLIT, game.players[0].selectedAmmo)
     }
 

@@ -12,84 +12,107 @@ import io.github.beretta299.sharejoy.util.darken
 import kotlin.math.abs
 import kotlin.math.sin
 
-internal fun DrawScope.drawSlingshot(view: WorldView, scene: MatchScene, owner: Int, front: Boolean) {
-    val game = scene.game
-    val x = game.slingshotX(owner)
-    val s = view.scale
-    val baseP = Offset(view.x(x), view.y(0f))
-    val forkP = Offset(view.x(x), view.y(1.35f))
-    // The two prongs sit one behind the other, seen slightly from the side.
-    val backTip = Offset(view.x(x + 0.34f), view.y(Balance.SLINGSHOT_Y + 0.12f))
-    val frontTip = Offset(view.x(x - 0.34f), view.y(Balance.SLINGSHOT_Y + 0.02f))
+private val WOOD_DARK = Color(0xFF3A2413)
+private val WOOD_MID = Color(0xFF7B5330)
+private val WOOD_LIGHT = Color(0xFFA9794A)
+private val BAND = Color(0xFF2A1A12)
+private val ROPE = Color(0xFFD9C29A)
+private val POUCH = Color(0xFF4A2F1C)
 
-    val active = owner == game.current && game.phase == Phase.PLAN
-    val pouch = if (active && scene.aiming) {
-        Offset(view.x(x + scene.pullX), view.y(Balance.SLINGSHOT_Y + scene.pullY))
+/** Height of the fork where the two prongs split, in metres above the ground. */
+private const val FORK_HEIGHT = 1.35f
+private const val PRONG_SPREAD = 0.34f
+
+/** How far the empty pouch hangs below the prong tips. */
+private const val POUCH_REST_DROP = 0.18f
+private const val SEED_OF_LOADED_SHOT = 7
+
+/**
+ * Draws a player's slingshot in two passes: the back prong and band behind the castles and shots ([front] false),
+ * then the trunk, front prong, pouch and loaded shot on top ([front] true).
+ */
+internal fun DrawScope.drawSlingshot(view: WorldViewport, scene: MatchScene, player: Int, front: Boolean) {
+    val game = scene.game
+    val x = game.slingshotX(player)
+    val metre = view.pixelsPerMetre
+    val base = Offset(view.screenX(x), view.screenY(0f))
+    val fork = Offset(view.screenX(x), view.screenY(FORK_HEIGHT))
+    // The two prongs sit one behind the other, seen slightly from the side.
+    val backTip = Offset(view.screenX(x + PRONG_SPREAD), view.screenY(Balance.SLINGSHOT_Y + 0.12f))
+    val frontTip = Offset(view.screenX(x - PRONG_SPREAD), view.screenY(Balance.SLINGSHOT_Y + 0.02f))
+    val restingPouch = Offset(view.screenX(x), view.screenY(Balance.SLINGSHOT_Y - POUCH_REST_DROP))
+
+    val isActive = player == game.currentPlayer && game.phase == Phase.PLAN
+    val pouch = if (isActive && scene.aiming) {
+        Offset(view.screenX(x + scene.pullX), view.screenY(Balance.SLINGSHOT_Y + scene.pullY))
     } else {
-        Offset(view.x(x), view.y(Balance.SLINGSHOT_Y - 0.18f))
+        restingPouch
     }
-    val dark = Color(0xFF3A2413)
-    val mid = Color(0xFF7B5330)
-    val light = Color(0xFFA9794A)
-    val band = Color(0xFF2A1A12)
 
     if (!front) {
-        drawLine(band, backTip, pouch, s * 0.08f, StrokeCap.Round)
-        drawLine(dark, forkP, backTip, s * 0.3f, StrokeCap.Round)
-        drawLine(mid.darken(0.08f), forkP, backTip, s * 0.19f, StrokeCap.Round)
+        drawLine(BAND, backTip, pouch, metre * 0.08f, StrokeCap.Round)
+        drawLine(WOOD_DARK, fork, backTip, metre * 0.3f, StrokeCap.Round)
+        drawLine(WOOD_MID.darken(0.08f), fork, backTip, metre * 0.19f, StrokeCap.Round)
         return
     }
 
-    if (active) {
-        // The loaded shot rests in the pouch.
+    if (isActive) {
         val ammo = game.activePlayer.selectedAmmo
-        val wx = (pouch.x - view.w / 2f - view.ox) / s + view.cx
-        val wy = view.cy - (pouch.y - view.h / 2f - view.oy) / s
-        drawProjectile(view, wx, wy, 0f, ammo.radius, ammo, 7, scene.time, 0f, 0f)
+        drawProjectile(view, view.worldX(pouch.x), view.worldY(pouch.y), 0f, ammo.radius, ammo, SEED_OF_LOADED_SHOT, scene.time)
     }
-    drawLine(dark, baseP, forkP, s * 0.36f, StrokeCap.Round)
-    drawLine(mid, baseP, forkP, s * 0.24f, StrokeCap.Round)
-    drawLine(light.copy(alpha = 0.6f), baseP + Offset(-s * 0.05f, 0f), forkP + Offset(-s * 0.05f, 0f), s * 0.06f, StrokeCap.Round)
-    drawLine(dark, forkP, frontTip, s * 0.3f, StrokeCap.Round)
-    drawLine(mid, forkP, frontTip, s * 0.19f, StrokeCap.Round)
-    // Rope binding at the fork and the leather band to the pouch.
-    for (k in 0..2) {
-        val y = forkP.y + s * (0.05f + k * 0.09f)
-        drawLine(Color(0xFFD9C29A), Offset(forkP.x - s * 0.17f, y), Offset(forkP.x + s * 0.17f, y - s * 0.04f), s * 0.05f, StrokeCap.Round)
-    }
-    drawLine(band, frontTip, pouch, s * 0.09f, StrokeCap.Round)
-    drawCircle(Color(0xFF4A2F1C), s * 0.13f, pouch)
+    drawTrunkAndFrontProng(base, fork, frontTip, metre)
+    drawLine(BAND, frontTip, pouch, metre * 0.09f, StrokeCap.Round)
+    drawCircle(POUCH, metre * 0.13f, pouch)
+    if (isActive && !scene.aiming) drawTurnMarker(restingPouch, metre, scene.time)
+}
 
-    // A ring on the ground marks whose turn it is.
-    if (active && !scene.aiming) {
-        val pulse = 0.5f + 0.5f * sin(scene.time * 4f)
-        drawCircle(
-            Color.White.copy(alpha = 0.25f + 0.3f * pulse), s * (0.75f + 0.12f * pulse),
-            Offset(view.x(x), view.y(Balance.SLINGSHOT_Y - 0.18f)), style = Stroke(s * 0.06f),
-        )
+private fun DrawScope.drawTrunkAndFrontProng(base: Offset, fork: Offset, frontTip: Offset, metre: Float) {
+    drawLine(WOOD_DARK, base, fork, metre * 0.36f, StrokeCap.Round)
+    drawLine(WOOD_MID, base, fork, metre * 0.24f, StrokeCap.Round)
+    val highlightShift = Offset(-metre * 0.05f, 0f)
+    drawLine(WOOD_LIGHT.copy(alpha = 0.6f), base + highlightShift, fork + highlightShift, metre * 0.06f, StrokeCap.Round)
+    drawLine(WOOD_DARK, fork, frontTip, metre * 0.3f, StrokeCap.Round)
+    drawLine(WOOD_MID, fork, frontTip, metre * 0.19f, StrokeCap.Round)
+    // Rope binding at the fork.
+    for (turn in 0..2) {
+        val y = fork.y + metre * (0.05f + turn * 0.09f)
+        drawLine(ROPE, Offset(fork.x - metre * 0.17f, y), Offset(fork.x + metre * 0.17f, y - metre * 0.04f), metre * 0.05f, StrokeCap.Round)
     }
 }
 
-internal fun DrawScope.drawTrajectory(view: WorldView, scene: MatchScene) {
+/** A pulsing ring around the pouch marks whose turn it is. */
+private fun DrawScope.drawTurnMarker(centre: Offset, metre: Float, time: Float) {
+    val pulse = 0.5f + 0.5f * sin(time * 4f)
+    drawCircle(
+        Color.White.copy(alpha = 0.25f + 0.3f * pulse), metre * (0.75f + 0.12f * pulse), centre,
+        style = Stroke(metre * 0.06f),
+    )
+}
+
+/** Dotted arc showing where the shot will fly. Longer with each Aim upgrade. */
+internal fun DrawScope.drawTrajectory(view: WorldViewport, scene: MatchScene) {
     val game = scene.game
-    val x0 = scene.anchorX + scene.pullX
-    val y0 = scene.anchorY + scene.pullY
-    val vx = scene.launchVx()
-    val vy = scene.launchVy()
-    if (vx * vx + vy * vy < 4f) return
-    val total = game.aimSeconds()
-    var t = 0.07f
-    var i = 0
-    while (t < total) {
-        val wx = x0 + vx * t
-        val wy = y0 + vy * t + 0.5f * game.world.gravity * t * t
-        if (wy < 0f && abs(wx) > Balance.GORGE_HALF_WIDTH) break
-        val fade = 1f - t / total
-        val c = Offset(view.x(wx), view.y(wy))
-        val r = view.scale * (0.07f + 0.07f * fade)
-        drawCircle(Color.Black.copy(alpha = 0.25f * fade + 0.1f), r * 1.35f, c)
-        drawCircle(Color.White.copy(alpha = 0.55f * fade + 0.4f), r, c)
-        t += 0.065f
-        i++
+    val startX = scene.anchorX + scene.pullX
+    val startY = scene.anchorY + scene.pullY
+    val velocityX = scene.launchVelocityX()
+    val velocityY = scene.launchVelocityY()
+    if (velocityX * velocityX + velocityY * velocityY < MIN_GUIDE_SPEED_SQUARED) return
+    val guideSeconds = game.aimGuideSeconds()
+    var seconds = GUIDE_FIRST_DOT_SECONDS
+    while (seconds < guideSeconds) {
+        val x = startX + velocityX * seconds
+        val y = startY + velocityY * seconds + 0.5f * game.world.gravity * seconds * seconds
+        val belowGround = y < 0f && abs(x) > Balance.GORGE_HALF_WIDTH
+        if (belowGround) break
+        val fade = 1f - seconds / guideSeconds
+        val dot = Offset(view.screenX(x), view.screenY(y))
+        val dotRadius = view.pixelsPerMetre * (0.07f + 0.07f * fade)
+        drawCircle(Color.Black.copy(alpha = 0.25f * fade + 0.1f), dotRadius * 1.35f, dot)
+        drawCircle(Color.White.copy(alpha = 0.55f * fade + 0.4f), dotRadius, dot)
+        seconds += GUIDE_DOT_INTERVAL_SECONDS
     }
 }
+
+private const val MIN_GUIDE_SPEED_SQUARED = 4f
+private const val GUIDE_FIRST_DOT_SECONDS = 0.07f
+private const val GUIDE_DOT_INTERVAL_SECONDS = 0.065f

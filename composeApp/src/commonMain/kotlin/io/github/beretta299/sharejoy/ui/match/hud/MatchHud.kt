@@ -18,7 +18,7 @@ import io.github.beretta299.sharejoy.ui.match.render.PLAYER_COLORS
 /** [viewer] is the player this phone belongs to when two phones are paired, or null when both share one screen. */
 @Composable
 fun MatchHud(hud: MatchUiState, viewer: Int?, onAction: (MatchAction) -> Unit) {
-    val mine = viewer == null || viewer == hud.current
+    val mine = viewer == null || viewer == hud.currentPlayer
     Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
         TopBar(hud, onAction, mine)
 
@@ -31,7 +31,7 @@ fun MatchHud(hud: MatchUiState, viewer: Int?, onAction: (MatchAction) -> Unit) {
         }
 
         AnimatedVisibility(hud.phase == Phase.HANDOVER, Modifier.align(Alignment.Center), enter = fadeIn(), exit = fadeOut()) {
-            Banner(if (viewer == hud.current) "Your turn" else "${NAMES[hud.current]}'s turn", PLAYER_COLORS[hud.current])
+            Banner(if (viewer == hud.currentPlayer) "Your turn" else "${NAMES[hud.currentPlayer]}'s turn", PLAYER_COLORS[hud.currentPlayer])
         }
         AnimatedVisibility(hud.canSplit && mine, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp), enter = fadeIn(), exit = fadeOut()) {
             Banner("Tap to split!", Gold, small = true)

@@ -16,12 +16,12 @@ import io.github.beretta299.sharejoy.util.lighten
 
 /**
  * Material textures painted once at start-up, in code, so the prototype ships without image assets.
- * One metre of world is [TPM] texels.
+ * One metre of world is [TEXELS_PER_METRE] texels.
  */
 class Textures {
-    val stone: ImageBitmap = paint(SIZE) { paintMasonry() }
-    val wood: ImageBitmap = paint(SIZE) { paintWood() }
-    val iron: ImageBitmap = paint(SIZE) { paintIron() }
+    val stone: ImageBitmap = paint(TEXTURE_SIZE) { paintMasonry() }
+    val wood: ImageBitmap = paint(TEXTURE_SIZE) { paintWood() }
+    val iron: ImageBitmap = paint(TEXTURE_SIZE) { paintIron() }
 
     private fun paint(size: Int, block: DrawScope.() -> Unit): ImageBitmap {
         val image = ImageBitmap(size, size)
@@ -32,30 +32,30 @@ class Textures {
     private fun DrawScope.paintMasonry() {
         val rng = Rng(7)
         drawRect(Color(0xFF4A463F)) // mortar
-        val rowH = TPM / 2f
-        val brickW = TPM.toFloat()
+        val brickHeight = TEXELS_PER_METRE / 2f
+        val brickWidth = TEXELS_PER_METRE.toFloat()
         var row = 0
         var y = 0f
         while (y < size.height) {
-            var x = if (row % 2 == 0) 0f else -brickW / 2f
+            var x = if (row % 2 == 0) 0f else -brickWidth / 2f
             while (x < size.width) {
                 val shade = rng.range(-0.07f, 0.07f)
                 val warm = rng.range(-0.02f, 0.03f)
                 val base = Color(0.60f + shade + warm, 0.58f + shade, 0.53f + shade - warm)
-                val top = Offset(x + 1.5f, y + 1.5f)
-                val sz = Size(brickW - 3f, rowH - 3f)
+                val brickTopLeft = Offset(x + 1.5f, y + 1.5f)
+                val brickSize = Size(brickWidth - 3f, brickHeight - 3f)
                 drawRoundRect(
                     Brush.verticalGradient(
-                        listOf(base.lighten(0.10f), base, base.darken(0.12f)), startY = y, endY = y + rowH,
+                        listOf(base.lighten(0.10f), base, base.darken(0.12f)), startY = y, endY = y + brickHeight,
                     ),
-                    topLeft = top, size = sz, cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f),
+                    topLeft = brickTopLeft, size = brickSize, cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f),
                 )
                 // Chiselled highlight along the top edge and shadow along the bottom.
-                drawLine(Color.White.copy(alpha = 0.16f), Offset(x + 3f, y + 2.5f), Offset(x + brickW - 3f, y + 2.5f), 1.2f)
-                drawLine(Color.Black.copy(alpha = 0.22f), Offset(x + 3f, y + rowH - 2.5f), Offset(x + brickW - 3f, y + rowH - 2.5f), 1.4f)
-                x += brickW
+                drawLine(Color.White.copy(alpha = 0.16f), Offset(x + 3f, y + 2.5f), Offset(x + brickWidth - 3f, y + 2.5f), 1.2f)
+                drawLine(Color.Black.copy(alpha = 0.22f), Offset(x + 3f, y + brickHeight - 2.5f), Offset(x + brickWidth - 3f, y + brickHeight - 2.5f), 1.4f)
+                x += brickWidth
             }
-            y += rowH
+            y += brickHeight
             row++
         }
         // Grain, pits and lichen.
@@ -67,52 +67,52 @@ class Textures {
             )
         }
         repeat(26) {
-            val c = Offset(rng.range(0f, size.width), rng.range(0f, size.height))
+            val patchCenter = Offset(rng.range(0f, size.width), rng.range(0f, size.height))
             repeat(9) {
                 drawCircle(
                     Color(0xFF5E6B3A).copy(alpha = rng.range(0.03f, 0.08f)),
-                    radius = rng.range(3f, 9f), center = c + Offset(rng.range(-10f, 10f), rng.range(-6f, 6f)),
+                    radius = rng.range(3f, 9f), center = patchCenter + Offset(rng.range(-10f, 10f), rng.range(-6f, 6f)),
                 )
             }
         }
         repeat(40) {
-            val a = Offset(rng.range(0f, size.width), rng.range(0f, size.height))
-            drawLine(Color.Black.copy(alpha = 0.16f), a, a + Offset(rng.range(-7f, 7f), rng.range(-5f, 5f)), 0.8f)
+            val start = Offset(rng.range(0f, size.width), rng.range(0f, size.height))
+            drawLine(Color.Black.copy(alpha = 0.16f), start, start + Offset(rng.range(-7f, 7f), rng.range(-5f, 5f)), 0.8f)
         }
     }
 
     private fun DrawScope.paintWood() {
         val rng = Rng(21)
-        val plankH = TPM / 2f
+        val plankHeight = TEXELS_PER_METRE / 2f
         var y = 0f
         while (y < size.height) {
             val shade = rng.range(-0.05f, 0.05f)
             val base = Color(0.52f + shade, 0.35f + shade * 0.8f, 0.19f + shade * 0.5f)
             drawRect(
-                Brush.verticalGradient(listOf(base.lighten(0.08f), base, base.darken(0.14f)), startY = y, endY = y + plankH),
-                topLeft = Offset(0f, y), size = Size(size.width, plankH),
+                Brush.verticalGradient(listOf(base.lighten(0.08f), base, base.darken(0.14f)), startY = y, endY = y + plankHeight),
+                topLeft = Offset(0f, y), size = Size(size.width, plankHeight),
             )
             // Long grain lines that wander slightly.
             repeat(13) {
-                var gx = 0f
-                var gy = y + rng.range(2f, plankH - 2f)
+                var grainX = 0f
+                var grainY = y + rng.range(2f, plankHeight - 2f)
                 val alpha = rng.range(0.06f, 0.2f)
                 val dark = rng.next() < 0.75f
-                while (gx < size.width) {
-                    val nx = gx + rng.range(18f, 46f)
-                    val ny = (gy + rng.range(-1.1f, 1.1f)).coerceIn(y + 1.5f, y + plankH - 1.5f)
+                while (grainX < size.width) {
+                    val nextX = grainX + rng.range(18f, 46f)
+                    val nextY = (grainY + rng.range(-1.1f, 1.1f)).coerceIn(y + 1.5f, y + plankHeight - 1.5f)
                     drawLine(
                         (if (dark) Color(0xFF2A1708) else Color(0xFFE2B47A)).copy(alpha = alpha),
-                        Offset(gx, gy), Offset(nx, ny), rng.range(0.6f, 1.3f),
+                        Offset(grainX, grainY), Offset(nextX, nextY), rng.range(0.6f, 1.3f),
                     )
-                    gx = nx
-                    gy = ny
+                    grainX = nextX
+                    grainY = nextY
                 }
             }
             // The gap between planks.
-            drawLine(Color(0xFF1C0F05).copy(alpha = 0.75f), Offset(0f, y + plankH - 0.8f), Offset(size.width, y + plankH - 0.8f), 1.8f)
+            drawLine(Color(0xFF1C0F05).copy(alpha = 0.75f), Offset(0f, y + plankHeight - 0.8f), Offset(size.width, y + plankHeight - 0.8f), 1.8f)
             drawLine(Color.White.copy(alpha = 0.10f), Offset(0f, y + 1f), Offset(size.width, y + 1f), 1f)
-            y += plankH
+            y += plankHeight
         }
         repeat(1800) {
             drawCircle(
@@ -125,7 +125,7 @@ class Textures {
     private fun DrawScope.paintIron() {
         val rng = Rng(33)
         drawRect(Color(0xFF2B3036))
-        val plate = TPM.toFloat()
+        val plateSize = TEXELS_PER_METRE.toFloat()
         var y = 0f
         while (y < size.height) {
             var x = 0f
@@ -135,23 +135,23 @@ class Textures {
                 drawRect(
                     Brush.linearGradient(
                         listOf(base.lighten(0.14f), base, base.darken(0.16f)),
-                        start = Offset(x, y), end = Offset(x + plate, y + plate),
+                        start = Offset(x, y), end = Offset(x + plateSize, y + plateSize),
                     ),
-                    topLeft = Offset(x + 1.5f, y + 1.5f), size = Size(plate - 3f, plate - 3f),
+                    topLeft = Offset(x + 1.5f, y + 1.5f), size = Size(plateSize - 3f, plateSize - 3f),
                 )
-                for (cx in listOf(x + 8f, x + plate - 8f)) for (cy in listOf(y + 8f, y + plate - 8f)) {
-                    drawCircle(Color(0xFF14171A), 3.6f, Offset(cx + 0.7f, cy + 0.9f))
-                    drawCircle(Color(0xFF7C858F), 3.1f, Offset(cx, cy))
-                    drawCircle(Color.White.copy(alpha = 0.5f), 1.1f, Offset(cx - 0.9f, cy - 0.9f))
+                for (rivetX in listOf(x + 8f, x + plateSize - 8f)) for (rivetY in listOf(y + 8f, y + plateSize - 8f)) {
+                    drawCircle(Color(0xFF14171A), 3.6f, Offset(rivetX + 0.7f, rivetY + 0.9f))
+                    drawCircle(Color(0xFF7C858F), 3.1f, Offset(rivetX, rivetY))
+                    drawCircle(Color.White.copy(alpha = 0.5f), 1.1f, Offset(rivetX - 0.9f, rivetY - 0.9f))
                 }
-                x += plate
+                x += plateSize
             }
-            y += plate
+            y += plateSize
         }
         // Brushed streaks and rust.
         repeat(700) {
-            val a = Offset(rng.range(0f, size.width), rng.range(0f, size.height))
-            drawLine(Color.White.copy(alpha = rng.range(0.02f, 0.08f)), a, a + Offset(rng.range(6f, 30f), rng.range(-1f, 1f)), 0.7f)
+            val start = Offset(rng.range(0f, size.width), rng.range(0f, size.height))
+            drawLine(Color.White.copy(alpha = rng.range(0.02f, 0.08f)), start, start + Offset(rng.range(6f, 30f), rng.range(-1f, 1f)), 0.7f)
         }
         repeat(900) {
             drawCircle(
@@ -162,7 +162,7 @@ class Textures {
     }
 
     companion object {
-        const val TPM = 64
-        const val SIZE = 512
+        const val TEXELS_PER_METRE = 64
+        const val TEXTURE_SIZE = 512
     }
 }

@@ -46,9 +46,9 @@ fun WorldCanvas(
             .pointerInput(pointer, seamless) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
-                    val w = size.width.toFloat()
-                    val h = size.height.toFloat()
-                    val start = screenToWorld(camera(), w, h, down.position.x, down.position.y)
+                    val widthPx = size.width.toFloat()
+                    val heightPx = size.height.toFloat()
+                    val start = screenToWorld(camera(), widthPx, heightPx, down.position.x, down.position.y)
                     val grabbed = pointer.onDown(start.x, start.y)
                     var moved = 0f
                     while (true) {
@@ -58,10 +58,10 @@ fun WorldCanvas(
                         val delta = change.positionChange()
                         moved += delta.getDistance()
                         if (grabbed) {
-                            val p = screenToWorld(camera(), w, h, change.position.x, change.position.y)
-                            pointer.onAimDrag(p.x, p.y)
+                            val aimPoint = screenToWorld(camera(), widthPx, heightPx, change.position.x, change.position.y)
+                            pointer.onAimDrag(aimPoint.x, aimPoint.y)
                         } else if (!seamless) {
-                            pointer.onPan(delta.x / (w / camera().viewW))
+                            pointer.onPan(delta.x / (widthPx / camera().viewWidth))
                         }
                         change.consume()
                     }
