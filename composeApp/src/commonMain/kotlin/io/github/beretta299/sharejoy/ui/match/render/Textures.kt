@@ -1,4 +1,4 @@
-package io.github.beretta299.sharejoy.render
+package io.github.beretta299.sharejoy.ui.match.render
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -10,18 +10,9 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-
-/** Small deterministic random generator, so textures and cracks look the same on every device. */
-class Rng(seed: Int) {
-    private var s = seed * 747796405 + 1442695041
-    fun next(): Float {
-        s = s * 1664525 + 1013904223
-        return ((s ushr 8) and 0xFFFF) / 65536f
-    }
-
-    fun range(a: Float, b: Float): Float = a + (b - a) * next()
-    fun int(n: Int): Int = (next() * n).toInt().coerceIn(0, n - 1)
-}
+import io.github.beretta299.sharejoy.util.Rng
+import io.github.beretta299.sharejoy.util.darken
+import io.github.beretta299.sharejoy.util.lighten
 
 /**
  * Material textures painted once at start-up, in code, so the prototype ships without image assets.
@@ -175,9 +166,3 @@ class Textures {
         const val SIZE = 512
     }
 }
-
-fun Color.lighten(amount: Float): Color = Color(
-    (red + amount).coerceIn(0f, 1f), (green + amount).coerceIn(0f, 1f), (blue + amount).coerceIn(0f, 1f), alpha,
-)
-
-fun Color.darken(amount: Float): Color = lighten(-amount)

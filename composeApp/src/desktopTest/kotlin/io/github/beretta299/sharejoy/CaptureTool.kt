@@ -3,8 +3,11 @@ package io.github.beretta299.sharejoy
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import io.github.beretta299.sharejoy.game.Ammo
+import io.github.beretta299.sharejoy.game.Game
 import io.github.beretta299.sharejoy.game.Phase
 import io.github.beretta299.sharejoy.game.Track
+import io.github.beretta299.sharejoy.presentation.match.MatchAction
+import io.github.beretta299.sharejoy.presentation.match.MatchViewModel
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
 import kotlin.test.Test
@@ -22,7 +25,8 @@ class CaptureTool {
     private val width = (System.getProperty("capture.width") ?: "720").toInt()
     private val height = (System.getProperty("capture.height") ?: "1560").toInt()
     private val out = File(System.getProperty("capture.dir") ?: "build/capture")
-    private val session = GameSession()
+    private val game = Game()
+    private val viewModel = MatchViewModel(game)
     private var nanos = 0L
     private var frameNo = 0
     private var renderNo = 0
@@ -47,49 +51,49 @@ class CaptureTool {
     }
 
     private fun ImageComposeScene.aimAndFire(pullX: Float, pullY: Float, name: String? = null) {
-        val ax = session.anchorX
-        val ay = session.anchorY
-        session.press(ax, ay)
+        val ax = viewModel.scene.anchorX
+        val ay = viewModel.scene.anchorY
+        viewModel.onPointerDown(ax, ay)
         for (i in 1..36) {
-            session.drag(ax + pullX * i / 36f, ay + pullY * i / 36f)
+            viewModel.onAimDrag(ax + pullX * i / 36f, ay + pullY * i / 36f)
             frames(1)
         }
         frames(24)
         if (name != null) shot(name)
-        session.release()
+        viewModel.onAimRelease()
     }
 
     private fun ImageComposeScene.waitForPlan(max: Int = 900) {
         var n = 0
-        while (session.game.phase != Phase.PLAN && !over() && n++ < max) frames(1)
+        while (game.phase != Phase.PLAN && !over() && n++ < max) frames(1)
     }
 
-    private fun over() = session.game.phase == Phase.ROUND_OVER || session.game.phase == Phase.MATCH_OVER
+    private fun over() = game.phase == Phase.ROUND_OVER || game.phase == Phase.MATCH_OVER
 
     @Test
     fun capture() {
         if (!enabled) return
         out.mkdirs()
         File(out, "frames").mkdirs()
-        val scene = ImageComposeScene(width, height, Density((System.getProperty("capture.density") ?: "2").toFloat())) { App(session) }
+        val scene = ImageComposeScene(width, height, Density((System.getProperty("capture.density") ?: "2").toFloat())) { App(viewModel) }
         with(scene) {
             // Give both sides a full purse so the script can show every kind of upgrade.
-            session.game.players.forEach { it.points = 12 }
+            game.players.forEach { it.points = 12 }
             frames(50)
             shot("01_red_plan")
-            session.buy(Track.AMMO)
+            viewModel.onAction(MatchAction.BuyUpgrade(Track.AMMO))
             frames(40)
             aimAndFire(-1.6f, -1.1f, "02_red_aim")
-            frames(52); session.tap(); frames(8)
+            frames(52); viewModel.onTap(); frames(8)
             shot("03_split_shot")
             frames(40); shot("04_impact")
             waitForPlan(); frames(60)
 
-            session.game.players[1].points = 12
+            game.players[1].points = 12
             shot("05_blue_plan")
-            session.buy(Track.COVER); frames(6); shot("06_blue_builds")
+            viewModel.onAction(MatchAction.BuyUpgrade(Track.COVER)); frames(6); shot("06_blue_builds")
             waitForPlan(); frames(30)
-            session.buy(Track.MATERIALS)
+            viewModel.onAction(MatchAction.BuyUpgrade(Track.MATERIALS))
             frames(40)
             aimAndFire(1.8f, -1.7f, "07_blue_aim")
             frames(100); shot("08_blue_impact")
@@ -104,9 +108,9 @@ class CaptureTool {
             var i = 0
             while (!over() && i < script.size) {
                 val (px, py, ammo) = script[i]
-                if (i == 0) { session.buy(Track.AMMO); session.buy(Track.AMMO); session.buy(Track.POWER) }
-                if (i == 1) { session.game.players[1].points = 8; session.buy(Track.POWER); session.repair() }
-                session.selectAmmo(ammo)
+                if (i == 0) { viewModel.onAction(MatchAction.BuyUpgrade(Track.AMMO)); viewModel.onAction(MatchAction.BuyUpgrade(Track.AMMO)); viewModel.onAction(MatchAction.BuyUpgrade(Track.POWER)) }
+                if (i == 1) { game.players[1].points = 8; viewModel.onAction(MatchAction.BuyUpgrade(Track.POWER)); viewModel.onAction(MatchAction.Repair) }
+                viewModel.onAction(MatchAction.SelectAmmo(ammo))
                 waitForPlan(); frames(45)
                 if (i == 0) shot("09_upgrades")
                 aimAndFire(px, py)
@@ -119,6 +123,6 @@ class CaptureTool {
             shot("11_end")
         }
         scene.close()
-        println("CAPTURE done: phase=${session.game.phase} turn=${session.game.turn} blocks=${session.game.blockCount(0)}/${session.game.blockCount(1)} frames=$frameNo")
+        println("CAPTURE done: phase=${game.phase} turn=${game.turn} blocks=${game.blockCount(0)}/${game.blockCount(1)} frames=$frameNo")
     }
 }
