@@ -3,6 +3,7 @@ package io.github.beretta299.sharejoy.data.link
 import io.github.beretta299.sharejoy.game.Ammo
 import io.github.beretta299.sharejoy.game.GameCommand
 import io.github.beretta299.sharejoy.game.Track
+import io.github.beretta299.sharejoy.model.PhysicalScreen
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -22,7 +23,8 @@ class WireCodecTest {
     fun everyMessageSurvivesARoundTrip() {
         val messages = everyCommand.mapIndexed { index, command -> WireMessage.Command(1000 + index, index % 2, command) } +
             listOf(
-                WireMessage.Hello(PROTOCOL_VERSION, "Pixel 9 · Żółw"),
+                WireMessage.Hello(PROTOCOL_VERSION, "Pixel 9 · Żółw", PhysicalScreen(68.5f, 152.25f)),
+                WireMessage.Hello(PROTOCOL_VERSION, "No screen size"),
                 WireMessage.Confirm(123456),
                 WireMessage.Aim(true, -0.5f, 0.25f),
                 WireMessage.Checksum(77, -19283746),

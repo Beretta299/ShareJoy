@@ -11,6 +11,7 @@ import io.github.beretta299.sharejoy.game.PieceKind
 import io.github.beretta299.sharejoy.game.Track
 import io.github.beretta299.sharejoy.game.checksum
 import io.github.beretta299.sharejoy.game.execute
+import io.github.beretta299.sharejoy.model.PhysicalScreen
 import io.github.beretta299.sharejoy.presentation.match.aim.SlingshotAim
 import io.github.beretta299.sharejoy.presentation.match.camera.CameraDirector
 import io.github.beretta299.sharejoy.presentation.match.effects.MatchEffects
@@ -34,9 +35,11 @@ import kotlin.math.min
 class MatchViewModel(
     private val game: Game = Game(),
     private val sync: LockstepSync? = null,
+    /** Real screen sizes of the two paired phones, left and right, used to line their pictures up. */
+    pairedScreens: List<PhysicalScreen>? = null,
     private val onLeave: () -> Unit = {},
 ) : ViewModel() {
-    private val cameras = CameraDirector(game)
+    private val cameras = CameraDirector(game, pairedScreens)
     private val aim = SlingshotAim(game)
     private val effects = MatchEffects()
     private val localPlayer: Int? = sync?.localPlayer

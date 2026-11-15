@@ -9,6 +9,7 @@ import io.github.beretta299.sharejoy.data.link.PairingPlatform
 import io.github.beretta299.sharejoy.data.link.PeerLink
 import io.github.beretta299.sharejoy.data.link.WireCodec
 import io.github.beretta299.sharejoy.data.link.WireMessage
+import io.github.beretta299.sharejoy.model.PhysicalScreen
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** A connection to another phone that is ready to play on. */
-class PairedMatch(val link: PeerLink, val role: LinkRole, val peerName: String)
+class PairedMatch(
+    val link: PeerLink,
+    val role: LinkRole,
+    val peerName: String,
+    /** Real screen sizes of the left and right phone, or null if either phone does not know its own. */
+    val screens: List<PhysicalScreen>?,
+)
 
 /** What the lobby shows. */
 sealed interface LobbyUiState {
@@ -76,7 +83,8 @@ class LobbyViewModel(private val platform: PairingPlatform?) : ViewModel() {
 
     /** Swaps [WireMessage.Hello]s and starts the match if both phones speak the same protocol. */
     private suspend fun greet(link: PeerLink, status: LinkStatus.Connected) {
-        link.send(WireCodec.encode(WireMessage.Hello(PROTOCOL_VERSION, platform?.deviceName.orEmpty())))
+        val localScreen = platform?.physicalScreen()?.takeIf { it.isValid }
+        link.send(WireCodec.encode(WireMessage.Hello(PROTOCOL_VERSION, platform?.deviceName.orEmpty(), localScreen)))
         while (link.status.value is LinkStatus.Connected) {
             val hello = link.poll()?.let(WireCodec::decode) as? WireMessage.Hello
             if (hello != null) {
@@ -85,13 +93,18 @@ class LobbyViewModel(private val platform: PairingPlatform?) : ViewModel() {
                 } else {
                     this.link = null // handed over to the match
                     _uiState.value = menu
-                    _pairedMatch.value = PairedMatch(link, status.role, status.peerName)
+                    _pairedMatch.value = PairedMatch(link, status.role, status.peerName, screensByPlayer(status.role, localScreen, hello.screen))
                     pairingJob?.cancel()
                 }
                 return
             }
             delay(HELLO_POLL_MILLIS)
         }
+    }
+
+    private fun screensByPlayer(role: LinkRole, local: PhysicalScreen?, peer: PhysicalScreen?): List<PhysicalScreen>? {
+        if (local == null || peer == null) return null
+        return if (role == LinkRole.HOST) listOf(local, peer) else listOf(peer, local)
     }
 
     private fun fail(reason: String) {

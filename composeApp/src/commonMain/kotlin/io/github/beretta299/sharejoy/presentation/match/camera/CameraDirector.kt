@@ -4,6 +4,7 @@ import io.github.beretta299.sharejoy.game.Balance
 import io.github.beretta299.sharejoy.game.Game
 import io.github.beretta299.sharejoy.game.Phase
 import io.github.beretta299.sharejoy.game.PieceKind
+import io.github.beretta299.sharejoy.model.PhysicalScreen
 import kotlin.math.exp
 import kotlin.math.max
 
@@ -16,7 +17,15 @@ import kotlin.math.max
  * across the open ground, so it leaves one screen and enters the other at the same height and the same instant.
  * After the hit each camera glides back home.
  */
-class CameraDirector(private val game: Game) {
+class CameraDirector(
+    private val game: Game,
+    /**
+     * Real screen sizes of the two paired phones, left and right, or null when unknown. With them both phones
+     * draw at the same real-world scale and put the ground the same distance above their bottom edges, so phones
+     * of any size standing on one table line up along the ground line.
+     */
+    private val pairedScreens: List<PhysicalScreen>? = null,
+) {
     val single = Camera()
     val paired = listOf(Camera(), Camera())
 
@@ -53,7 +62,7 @@ class CameraDirector(private val game: Game) {
     private fun viewHeight() = Balance.SCREEN_WIDTH / aspect
 
     /** Height of the camera centre that puts the ground [GROUND_LINE] of a screen below the middle. */
-    private fun restY() = viewHeight() * GROUND_LINE
+    private fun restY(viewHeight: Float = viewHeight()) = viewHeight * GROUND_LINE
 
     private fun homeX(player: Int) = game.sideSign(player) * (Balance.OPEN_GROUND_WIDTH + Balance.SCREEN_WIDTH) / 2f
 
@@ -64,7 +73,8 @@ class CameraDirector(private val game: Game) {
     }
 
     /** Keeps a high lob on screen. */
-    private fun followY(shotY: Float) = max(restY(), shotY - viewHeight() * LOB_MARGIN)
+    private fun followY(shotY: Float, viewHeight: Float = viewHeight()) =
+        max(restY(viewHeight), shotY - viewHeight * LOB_MARGIN)
 
     private fun updateSingle(dt: Float, snap: Boolean) {
         var targetY = restY()
@@ -92,19 +102,46 @@ class CameraDirector(private val game: Game) {
 
     private fun updatePaired(dt: Float, snap: Boolean) {
         val flying = flyingShot()
-        // Centre of the joined window: it starts on the shooter's home and ends on the target's.
-        val joined = flying?.let { (it.x + it.velocityX * PAIRED_LEAD).coerceIn(-Balance.OPEN_GROUND_WIDTH / 2f, Balance.OPEN_GROUND_WIDTH / 2f) }
-        val targetY = if (flying != null) followY(flying.y) else restY()
+        // The seam between the phones: it starts at the shooter's edge of the open ground and ends at the target's.
+        val seam = flying?.let { (it.x + it.velocityX * PAIRED_LEAD).coerceIn(-Balance.OPEN_GROUND_WIDTH / 2f, Balance.OPEN_GROUND_WIDTH / 2f) }
+        // Both phones rise by the same amount to keep a high lob in view, so the ground stays level across them.
+        val lift = if (flying != null) followY(flying.y, pairedReferenceHeight()) - restY(pairedReferenceHeight()) else 0f
         // The idle phone has to close the whole gap before the shot reaches the seam, so it moves briskly.
         val speed = if (flying != null) PAIRED_FLIGHT_SPEED else PAIRED_HOME_SPEED
         for (player in 0..1) {
-            val targetX = if (joined != null) joined + game.sideSign(player) * Balance.SCREEN_WIDTH / 2f else homeX(player)
-            glide(paired[player], targetX, targetY, dt, speed, snap)
+            val innerEdge = seam ?: (game.sideSign(player) * Balance.OPEN_GROUND_WIDTH / 2f)
+            val targetX = innerEdge + game.sideSign(player) * pairedViewWidth(player) / 2f
+            val targetY = pairedViewHeight(player) / 2f - pairedGroundHeight() + lift
+            glide(paired[player], targetX, targetY, dt, speed, snap, pairedViewWidth(player))
         }
     }
 
-    private fun glide(camera: Camera, targetX: Float, targetY: Float, dt: Float, speed: Float, snap: Boolean) {
-        camera.viewWidth = Balance.SCREEN_WIDTH
+    // ------------------------------------------------------------------ paired screen sizes, in world metres
+
+    /** World metres per millimetre of glass: the narrower phone shows exactly [Balance.SCREEN_WIDTH]. */
+    private fun metresPerMillimetre(screens: List<PhysicalScreen>) = Balance.SCREEN_WIDTH / screens.minOf { it.widthMm }
+
+    private fun pairedViewWidth(player: Int): Float {
+        val screens = pairedScreens ?: return Balance.SCREEN_WIDTH
+        return screens[player].widthMm * metresPerMillimetre(screens)
+    }
+
+    private fun pairedViewHeight(player: Int): Float {
+        val screens = pairedScreens ?: return viewHeight()
+        return screens[player].heightMm * metresPerMillimetre(screens)
+    }
+
+    /** The shorter phone decides how much sky there is to work with. */
+    private fun pairedReferenceHeight() = minOf(pairedViewHeight(0), pairedViewHeight(1))
+
+    /** How far the ground sits above the bottom edge of both phones, in world metres. */
+    private fun pairedGroundHeight() = pairedReferenceHeight() * (0.5f - GROUND_LINE)
+
+    private fun glide(
+        camera: Camera, targetX: Float, targetY: Float, dt: Float, speed: Float, snap: Boolean,
+        viewWidth: Float = Balance.SCREEN_WIDTH,
+    ) {
+        camera.viewWidth = viewWidth
         val blend = if (snap) 1f else 1f - exp(-dt * speed)
         camera.centerX += (targetX - camera.centerX) * blend
         camera.centerY += (targetY - camera.centerY) * blend
