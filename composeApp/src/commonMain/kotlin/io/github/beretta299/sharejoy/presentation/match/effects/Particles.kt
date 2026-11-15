@@ -1,8 +1,12 @@
-package io.github.beretta299.sharejoy.render
+package io.github.beretta299.sharejoy.presentation.match.effects
 
 import androidx.compose.ui.graphics.Color
+import io.github.beretta299.sharejoy.game.Balance
 import io.github.beretta299.sharejoy.game.GameEvent
 import io.github.beretta299.sharejoy.game.Material
+import io.github.beretta299.sharejoy.util.Rng
+import io.github.beretta299.sharejoy.util.lighten
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -42,7 +46,7 @@ class Particles {
                 when (p.kind) {
                     ParticleKind.DEBRIS, ParticleKind.SPARK -> {
                         p.vy -= 9.81f * dt
-                        if (p.y < 0.05f && p.vy < 0f && kotlin.math.abs(p.x) > io.github.beretta299.sharejoy.game.Balance.GORGE_HALF_WIDTH) {
+                        if (p.y < 0.05f && p.vy < 0f && abs(p.x) > Balance.GORGE_HALF_WIDTH) {
                             // Rubble bounces once or twice on the ground, then lies still.
                             p.y = 0.05f
                             p.vy = -p.vy * 0.3f

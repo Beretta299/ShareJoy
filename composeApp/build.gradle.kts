@@ -31,6 +31,11 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.lifecycle.viewmodel.compose)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)

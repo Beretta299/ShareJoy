@@ -24,7 +24,7 @@ Pairing two phones is the next big step (see the project plan).
 | Desktop (fastest way to try it) | `./gradlew :composeApp:run` |
 | Android debug APK | `./gradlew :composeApp:assembleDebug` then install `composeApp/build/outputs/apk/debug/composeApp-debug.apk` |
 | iOS | Targets are declared and the entry point is `MainViewController()`. The Xcode host project is not added yet. |
-| Tests | `./gradlew :core:game-core:jvmTest` |
+| Tests | `./gradlew :core:game-core:jvmTest :composeApp:desktopTest` |
 
 You need JDK 17+ and, for Android, SDK platform 36.
 
@@ -47,26 +47,57 @@ You need JDK 17+ and, for Android, SDK platform 36.
 
 Levels cost 2, 4 and 6 points. **Repair** costs 2 and mends your 4 most damaged blocks.
 
-## Project layout
+## Architecture
+
+MVVM on top of a pure domain module. Dependencies point one way only: `ui` knows `presentation`,
+`presentation` knows the domain, and the domain knows nothing about either.
 
 ```
-core/game-core   Pure Kotlin, no UI: the physics engine, castle blueprints, turn rules, balance numbers.
-                 Deterministic, so the same inputs always give the same match. Fully unit-testable.
-composeApp       Compose Multiplatform app: Canvas renderer, camera, input, HUD.
-                 Entry points for Android, desktop (JVM) and iOS.
+core/game-core                     DOMAIN. Pure Kotlin, no UI, no platform code.
+  physics/                         Rigid-body solver written for this game.
+  game/                            Rules: Game (the match), Castle blueprints, Balance (every tunable number).
+
+composeApp                         The app: Android, desktop (JVM) and iOS entry points.
+  presentation/match/              PRESENTATION. No composables.
+    MatchViewModel                 Steps the match, takes input, publishes state. The only door into the domain.
+    MatchUiState                   Immutable state for the HUD, exposed as a StateFlow.
+    MatchAction                    Everything the HUD can ask for (buy, repair, select ammo, next round, restart).
+    MatchScene                     Read-only view of the live world for the canvas, read once per frame.
+    camera/CameraDirector          Where each screen looks: one shared phone, or two paired phones.
+    aim/SlingshotAim               Finger drag to pull vector to shot.
+    effects/                       Rubble, shake and slow motion driven by game events.
+  ui/                              UI. Stateless composables: state in, events out.
+    match/MatchScreen              MatchRoute binds the ViewModel; MatchScreen lays out one or two phones.
+    match/WorldCanvas              Draws the world and turns touches into world coordinates.
+    match/hud/                     Top bar, build bar, round-over panel, shared HUD pieces.
+    match/render/                  One painter per thing on screen: scenery, terrain, castle, Keeper, shots.
+    theme/
+  util/                            Small helpers with no home of their own.
 ```
+
+How a frame flows: `MatchRoute` calls `MatchViewModel.onFrame`, the ViewModel steps `Game`, hands its events
+to the effects and cameras, and publishes a new `MatchUiState`. The HUD recomposes only when that state
+changes. The canvas redraws every frame from `MatchScene`, because a world that moves sixty times a second is
+not worth copying into immutable state.
+
+There is no data layer yet. It arrives with pairing and the backend, as repositories behind domain interfaces.
 
 Things worth a look:
 
-* `physics/World.kt`: a small rigid-body solver written for this game (SAT + clipping for boxes,
-  sequential impulses with warm starting, sleeping). No native dependencies, so it runs on every target.
-* `game/Game.kt`: the match state machine. `game/Model.kt` holds every tunable number in `Balance`.
+* `physics/World.kt`: SAT + clipping for boxes, sequential impulses with warm starting, sleeping. No native
+  dependencies, so it runs on every target, and it is deterministic.
 * `render/Textures.kt`: stone, wood and iron textures are painted in code at start-up, so the prototype
   ships without image assets.
-* `BalanceSimTest`: plays bot-vs-bot rounds headlessly and prints pacing numbers used for tuning.
+
+## Tests
+
+* `core/game-core`: rules, stability of the standing castle, determinism, and `BalanceSimTest`, which plays
+  bot-vs-bot rounds headlessly and prints pacing numbers used for tuning.
+* `composeApp` (`commonTest`): `MatchViewModelTest`, `CameraDirectorTest` (including that two paired screens
+  form one continuous picture while a shot crosses) and `SlingshotAimTest`.
 * `CaptureTool` (desktop test): plays a scripted match off-screen and saves screenshots or a video:
   `./gradlew :composeApp:desktopTest --tests '*CaptureTool*' -Dcapture=true`
-  (add `-Dcapture.width=1440` for the joined two-phone view, `-Dcapture.video=true` for video frames)
+  (add `-Dcapture.width=1460` for the two-phone view, `-Dcapture.video=true` for video frames)
 
 ## Not in the prototype yet
 
