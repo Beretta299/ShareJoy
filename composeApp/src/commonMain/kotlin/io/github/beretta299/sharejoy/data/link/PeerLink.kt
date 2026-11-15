@@ -1,5 +1,6 @@
 package io.github.beretta299.sharejoy.data.link
 
+import io.github.beretta299.sharejoy.model.PhysicalScreen
 import kotlinx.coroutines.flow.StateFlow
 
 /** Which side of the pairing this phone took. The host plays the left castle, the guest the right. */
@@ -49,6 +50,9 @@ interface PairingPlatform {
 
     /** This phone's name as the other phone will see it. */
     val deviceName: String
+
+    /** Real size of this phone's screen, or null if the device does not report one. */
+    fun physicalScreen(): PhysicalScreen?
 
     /** Asks the user for whatever permissions pairing needs. Returns true if pairing may go ahead. */
     suspend fun ensurePermissions(): Boolean
