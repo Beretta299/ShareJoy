@@ -10,41 +10,45 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import io.github.beretta299.sharejoy.presentation.match.effects.ParticleKind
 import io.github.beretta299.sharejoy.presentation.match.effects.Particles
+import kotlin.math.PI
 import kotlin.math.max
 
-internal fun DrawScope.drawParticles(view: WorldView, particles: Particles) {
-    for (p in particles.items) {
-        val c = Offset(view.x(p.x), view.y(p.y))
-        if (c.x < -60f || c.x > size.width + 60f) continue
-        val t = p.life / p.maxLife
-        val s = p.size * view.scale
-        when (p.kind) {
+private const val DEGREES_PER_RADIAN = (180.0 / PI).toFloat()
+
+/** Rubble, dust, sparks, blast flashes and repair glints. */
+internal fun DrawScope.drawParticles(view: WorldViewport, particles: Particles) {
+    for (particle in particles.items) {
+        val centre = Offset(view.screenX(particle.x), view.screenY(particle.y))
+        if (centre.x < -60f || centre.x > size.width + 60f) continue
+        val lifeFraction = particle.ageSeconds / particle.lifetimeSeconds
+        val sizePx = particle.size * view.pixelsPerMetre
+        when (particle.kind) {
             ParticleKind.DEBRIS -> {
-                val alpha = if (t > 0.7f) (1f - t) / 0.3f else 1f
+                val alpha = if (lifeFraction > 0.7f) (1f - lifeFraction) / 0.3f else 1f
                 withTransform({
-                    translate(c.x, c.y)
-                    rotate(-p.rot * 57.3f, Offset.Zero)
+                    translate(centre.x, centre.y)
+                    rotate(-particle.rotation * DEGREES_PER_RADIAN, Offset.Zero)
                 }) {
-                    drawRect(p.color.copy(alpha = alpha), topLeft = Offset(-s * p.aspect / 2f, -s / 2f), size = Size(s * p.aspect, s))
-                    drawRect(Color.Black.copy(alpha = 0.35f * alpha), topLeft = Offset(-s * p.aspect / 2f, -s / 2f), size = Size(s * p.aspect, s), style = Stroke(1f))
+                    drawRect(particle.color.copy(alpha = alpha), topLeft = Offset(-sizePx * particle.aspectRatio / 2f, -sizePx / 2f), size = Size(sizePx * particle.aspectRatio, sizePx))
+                    drawRect(Color.Black.copy(alpha = 0.35f * alpha), topLeft = Offset(-sizePx * particle.aspectRatio / 2f, -sizePx / 2f), size = Size(sizePx * particle.aspectRatio, sizePx), style = Stroke(1f))
                 }
             }
             ParticleKind.DUST -> drawCircle(
-                Brush.radialGradient(listOf(p.color.copy(alpha = 0.42f * (1f - t)), p.color.copy(alpha = 0f)), center = c, radius = s),
-                s, c,
+                Brush.radialGradient(listOf(particle.color.copy(alpha = 0.42f * (1f - lifeFraction)), particle.color.copy(alpha = 0f)), center = centre, radius = sizePx),
+                sizePx, centre,
             )
             ParticleKind.SPARK -> {
-                val tail = Offset(c.x - p.vx * 0.03f * view.scale, c.y + p.vy * 0.03f * view.scale)
-                drawLine(p.color.copy(alpha = 1f - t), c, tail, max(1.5f, s), StrokeCap.Round)
+                val tail = Offset(centre.x - particle.velocityX * 0.03f * view.pixelsPerMetre, centre.y + particle.velocityY * 0.03f * view.pixelsPerMetre)
+                drawLine(particle.color.copy(alpha = 1f - lifeFraction), centre, tail, max(1.5f, sizePx), StrokeCap.Round)
             }
             ParticleKind.FLASH -> drawCircle(
-                Brush.radialGradient(listOf(p.color.copy(alpha = 0.95f * (1f - t)), Color(0xFFFF8A2B).copy(alpha = 0.6f * (1f - t)), Color.Transparent), center = c, radius = s),
-                s, c,
+                Brush.radialGradient(listOf(particle.color.copy(alpha = 0.95f * (1f - lifeFraction)), Color(0xFFFF8A2B).copy(alpha = 0.6f * (1f - lifeFraction)), Color.Transparent), center = centre, radius = sizePx),
+                sizePx, centre,
             )
             ParticleKind.GLINT -> {
-                val a = 1f - t
-                drawLine(p.color.copy(alpha = a), c - Offset(s, 0f), c + Offset(s, 0f), max(1.2f, s * 0.3f), StrokeCap.Round)
-                drawLine(p.color.copy(alpha = a), c - Offset(0f, s), c + Offset(0f, s), max(1.2f, s * 0.3f), StrokeCap.Round)
+                val glintAlpha = 1f - lifeFraction
+                drawLine(particle.color.copy(alpha = glintAlpha), centre - Offset(sizePx, 0f), centre + Offset(sizePx, 0f), max(1.2f, sizePx * 0.3f), StrokeCap.Round)
+                drawLine(particle.color.copy(alpha = glintAlpha), centre - Offset(0f, sizePx), centre + Offset(0f, sizePx), max(1.2f, sizePx * 0.3f), StrokeCap.Round)
             }
         }
     }

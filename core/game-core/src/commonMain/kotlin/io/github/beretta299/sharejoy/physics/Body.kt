@@ -1,19 +1,20 @@
 package io.github.beretta299.sharejoy.physics
 
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * A rigid body: either an oriented box (halfW x halfH) or a circle (radius > 0).
+ * A rigid body: either an oriented box ([halfWidth] x [halfHeight]) or a circle ([radius] > 0).
  *
  * All state is plain floats so the solver allocates nothing per step.
- * World units are metres, kilograms-ish and seconds; y points up.
+ * World units are metres, kilograms and seconds; y points up.
  */
 class Body(
     val id: Int,
-    var halfW: Float,
-    var halfH: Float,
+    var halfWidth: Float,
+    var halfHeight: Float,
     val radius: Float = 0f,
     density: Float,
     var friction: Float = 0.6f,
@@ -21,95 +22,107 @@ class Body(
 ) {
     var x = 0f
     var y = 0f
+
+    /** Rotation in radians, counter-clockwise. */
     var angle = 0f
-    var vx = 0f
-    var vy = 0f
-    var omega = 0f
+    var velocityX = 0f
+    var velocityY = 0f
+
+    /** Radians per second, counter-clockwise. */
+    var angularVelocity = 0f
 
     var mass = 0f
         private set
-    var invMass = 0f
+    var inverseMass = 0f
         private set
-    var invInertia = 0f
+    var inverseInertia = 0f
         private set
 
     /** Sleeping bodies act as static until something disturbs them; this keeps stacks rock solid. */
-    var asleep = false
-    var sleepTime = 0f
+    var isAsleep = false
+        private set
 
-    /** Effective inverse mass / inertia for the current step (zero while asleep). */
-    internal var im = 0f
-    internal var ii = 0f
+    /** How long the body has been nearly still. It falls asleep once this passes a threshold. */
+    internal var restingSeconds = 0f
 
-    fun wake() {
-        asleep = false
-        sleepTime = 0f
-        im = invMass
-        ii = invInertia
-    }
+    /**
+     * Inverse mass and inertia the solver uses this step. Equal to [inverseMass] and [inverseInertia]
+     * while awake, zero while asleep, so a sleeping body behaves as immovable.
+     */
+    internal var solverInverseMass = 0f
+    internal var solverInverseInertia = 0f
 
-    fun sleep() {
-        if (invMass == 0f) return
-        asleep = true
-        vx = 0f
-        vy = 0f
-        omega = 0f
-        im = 0f
-        ii = 0f
-    }
+    /** Free slot for the game layer to link the body back to its owner (block, Keeper, projectile). */
+    var userData: Any? = null
 
-    val isCircle: Boolean get() = radius > 0f
-    val isStatic: Boolean get() = invMass == 0f
+    /** Largest impact received during the last step, as a change in velocity (m/s). Reset every step. */
+    var strongestImpact = 0f
 
-    /** Free slot for the game layer (block, keeper, projectile...). */
-    var tag: Any? = null
-
-    /** Largest impact (in delta-v units) received during the last step; reset every step. */
-    var impact = 0f
-
-    /** How much harder this body hits others than its momentum alone would (projectiles punch above their weight). */
-    var punch = 1f
+    /** How much harder this body hits others than its momentum alone would. Projectiles hit above their weight. */
+    var impactMultiplier = 1f
 
     /** True while this body touched static ground during the last step. */
-    var touchingGround = false
+    var isTouchingGround = false
 
-    /** Marks static bodies that count as "the ground" for [touchingGround]. */
+    /** Marks static bodies that count as "the ground" for [isTouchingGround]. */
     var isGround = false
+
+    val isCircle: Boolean get() = radius > 0f
+    val isStatic: Boolean get() = inverseMass == 0f
 
     init {
         setDensity(density)
     }
 
+    fun wake() {
+        isAsleep = false
+        restingSeconds = 0f
+        solverInverseMass = inverseMass
+        solverInverseInertia = inverseInertia
+    }
+
+    fun sleep() {
+        if (isStatic) return
+        isAsleep = true
+        velocityX = 0f
+        velocityY = 0f
+        angularVelocity = 0f
+        solverInverseMass = 0f
+        solverInverseInertia = 0f
+    }
+
+    /** Recomputes mass and inertia. A density of zero or less makes the body static. */
     fun setDensity(density: Float) {
         if (density <= 0f) {
             mass = 0f
-            invMass = 0f
-            invInertia = 0f
+            inverseMass = 0f
+            inverseInertia = 0f
             return
         }
         if (isCircle) {
-            mass = density * PI_F * radius * radius
-            invMass = 1f / mass
-            invInertia = 1f / (0.5f * mass * radius * radius)
+            mass = density * PI_FLOAT * radius * radius
+            inverseMass = 1f / mass
+            inverseInertia = 1f / (0.5f * mass * radius * radius)
         } else {
-            val w = halfW * 2f
-            val h = halfH * 2f
-            mass = density * w * h
-            invMass = 1f / mass
-            invInertia = 1f / (mass * (w * w + h * h) / 12f)
+            val width = halfWidth * 2f
+            val height = halfHeight * 2f
+            mass = density * width * height
+            inverseMass = 1f / mass
+            inverseInertia = 1f / (mass * (width * width + height * height) / 12f)
         }
     }
 
-    /** Half extents of the axis-aligned bounding box. */
-    fun aabbHalfW(): Float =
-        if (isCircle) radius else abs(cos(angle)) * halfW + abs(sin(angle)) * halfH
+    /** Half the width of the axis-aligned box that encloses this body at its current angle. */
+    fun boundingHalfWidth(): Float =
+        if (isCircle) radius else abs(cos(angle)) * halfWidth + abs(sin(angle)) * halfHeight
 
-    fun aabbHalfH(): Float =
-        if (isCircle) radius else abs(sin(angle)) * halfW + abs(cos(angle)) * halfH
+    /** Half the height of the axis-aligned box that encloses this body at its current angle. */
+    fun boundingHalfHeight(): Float =
+        if (isCircle) radius else abs(sin(angle)) * halfWidth + abs(cos(angle)) * halfHeight
 
-    fun speedSq(): Float = vx * vx + vy * vy
+    fun speedSquared(): Float = velocityX * velocityX + velocityY * velocityY
 
-    companion object {
-        const val PI_F = 3.1415927f
+    private companion object {
+        const val PI_FLOAT = PI.toFloat()
     }
 }

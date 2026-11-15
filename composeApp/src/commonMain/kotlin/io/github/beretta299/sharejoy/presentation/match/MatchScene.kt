@@ -27,6 +27,6 @@ interface MatchScene {
     val pullY: Float
     val anchorX: Float
     val anchorY: Float
-    fun launchVx(): Float
-    fun launchVy(): Float
+    fun launchVelocityX(): Float
+    fun launchVelocityY(): Float
 }

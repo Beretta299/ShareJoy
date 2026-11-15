@@ -61,10 +61,10 @@ internal fun BoxScope.TopBar(hud: MatchUiState, onAction: (MatchAction) -> Unit,
         }
         val hint = when (hud.phase) {
             Phase.PLAN, Phase.BUILDING -> when {
-                !mine -> "${NAMES[hud.current]} is taking aim…"
+                !mine -> "${NAMES[hud.currentPlayer]} is taking aim…"
                 hud.phase == Phase.BUILDING -> "Building…"
                 hud.aiming -> "Release to fire"
-                else -> "${NAMES[hud.current]}: build, then pull the slingshot back"
+                else -> "${NAMES[hud.currentPlayer]}: build, then pull the slingshot back"
             }
             else -> ""
         }
@@ -77,7 +77,7 @@ internal fun BoxScope.TopBar(hud: MatchUiState, onAction: (MatchAction) -> Unit,
 
 @Composable
 internal fun PlayerBadge(index: Int, hud: MatchUiState) {
-    val active = hud.current == index && hud.phase != Phase.ROUND_OVER && hud.phase != Phase.MATCH_OVER
+    val active = hud.currentPlayer == index && hud.phase != Phase.ROUND_OVER && hud.phase != Phase.MATCH_OVER
     val color = PLAYER_COLORS[index]
     Row(
         Modifier

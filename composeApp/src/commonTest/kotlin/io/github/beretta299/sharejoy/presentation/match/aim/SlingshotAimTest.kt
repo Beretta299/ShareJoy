@@ -18,7 +18,7 @@ class SlingshotAimTest {
         aim.grab(aim.anchorX, aim.anchorY)
         aim.dragTo(aim.anchorX - 30f, aim.anchorY)
         val length = sqrt(aim.pullX * aim.pullX + aim.pullY * aim.pullY)
-        assertEquals(Balance.MAX_PULL, length, 0.001f)
+        assertEquals(Balance.MAX_SLINGSHOT_PULL, length, 0.001f)
     }
 
     @Test
@@ -32,8 +32,8 @@ class SlingshotAimTest {
     fun aShotLaunchesOppositeToThePull() {
         aim.grab(aim.anchorX, aim.anchorY)
         aim.dragTo(aim.anchorX - 1.5f, aim.anchorY - 1f)
-        assertTrue(aim.launchVx() > 0f)
-        assertTrue(aim.launchVy() > 0f)
+        assertTrue(aim.launchVelocityX() > 0f)
+        assertTrue(aim.launchVelocityY() > 0f)
     }
 
     @Test
